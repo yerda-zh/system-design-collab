@@ -3,7 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './auth/auth.module';
 import { RoomsModule } from './rooms/rooms.module';
-
+import { CanvasStateModule } from './canvas/canvas-state.module';
 
 @Module({
   imports: [
@@ -31,6 +31,7 @@ import { RoomsModule } from './rooms/rooms.module';
 
     AuthModule,
     RoomsModule,
+    CanvasStateModule,
   ],
 })
 export class AppModule {}

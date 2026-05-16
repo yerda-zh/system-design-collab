@@ -18,16 +18,13 @@ export class Room {
   @Column()
   name: string;
 
-  // The invite token is a separate UUID used only for sharing
   @Column({ unique: true })
   inviteToken: string;
 
-  // ManyToOne: many rooms can have the same owner
   @ManyToOne(() => User)
-  @JoinColumn({ name: 'owner_id' })
+  @JoinColumn({ name: 'ownerId' })
   owner: User;
 
-  // We store ownerId directly so we can query without joining the users table
   @Column()
   ownerId: string;
 
