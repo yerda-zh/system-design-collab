@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+
+  # PostgreSQL — permanent database
+  postgres:
+    image: postgres:15          # use official PostgreSQL version 15 image
+    container_name: sdc_postgres
+    environment:
+      POSTGRES_USER: ${DB_USER}         # read from .env file
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "5432:5432"   # expose port so our server can connect
+    volumes:
+      - postgres_data:/var/lib/postgresql/data  # persist data between restarts
+
+  # Redis — fast in-memory store (used heavily in Phase 3)
+  redis:
+    image: redis:7
+    container_name: sdc_redis
+    ports:
+      - "6379:6379"
+
+volumes:
+  postgres_data:  # named volume so data survives container restarts
