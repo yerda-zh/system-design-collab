@@ -1,0 +1,20 @@
+import axios from 'axios';
+import { useAuthStore } from '../store/authStore';
+
+// Create an axios instance with our server's base URL
+const api = axios.create({
+  baseURL: 'http://localhost:3001',
+});
+
+// Interceptor — runs before every request
+// Automatically adds the JWT token to every request header
+// so we don't have to do it manually in every API call
+api.interceptors.request.use((config) => {
+  const token = useAuthStore.getState().token;
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+export default api;
