@@ -2,38 +2,25 @@ import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Canvas from '../components/canvas/Canvas';
 import ComponentLibrary from '../components/sidebar/ComponentLibrary';
-import { loadCanvas, saveCanvas } from '../api/canvas';
+import CursorOverlay from '../components/canvas/CursorOverlay';
+import ActiveUsers from '../components/collaboration/ActiveUsers';
+import { saveCanvas } from '../api/canvas';
 import { useCanvasStore } from '../store/canvasStore';
+import { useCollaborationStore } from '../store/collaborationStore';
+import { useCollaboration } from '../hooks/useCollaboration';
 import type { NodeType } from '../types';
 
 export default function RoomPage() {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
 
-  const { nodes, edges, setNodes, setEdges, setRevision, isDirty, markSaved } =
-    useCanvasStore();
+  const { nodes, edges, setRevision, isDirty, markSaved } = useCanvasStore();
+  const { isJoined } = useCollaborationStore();
 
-  const [roomName] = useState('');
+  const { emitOperation, emitCursor } = useCollaboration(roomId!);
+
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-
-  // Load the canvas state when the page opens
-  useEffect(() => {
-    if (!roomId) return;
-
-    const load = async () => {
-      try {
-        const data = await loadCanvas(roomId);
-        setNodes(data.nodes);
-        setEdges(data.edges);
-        setRevision(data.revision);
-      } catch {
-        setError('Failed to load canvas. You may not have access.');
-      }
-    };
-
-    load();
-  }, [roomId, setEdges, setNodes, setRevision]);
 
   const handleSave = useCallback(async () => {
     if (!roomId || saving) return;
@@ -49,7 +36,6 @@ export default function RoomPage() {
     }
   }, [roomId, nodes, edges, saving, markSaved, setRevision]);
 
-  // Ctrl+S to save
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
@@ -62,38 +48,57 @@ export default function RoomPage() {
   }, [handleSave]);
 
   const handleAddNode = (nodeType: NodeType) => {
-    (window).__addNode?.(nodeType);
+    window.__addNode?.(nodeType);
   };
+
+  const handleEmitOperation = useCallback(
+    (op: object) => {
+      emitOperation(op as Parameters<typeof emitOperation>[0]);
+    },
+    [emitOperation],
+  );
+
+  if (!isJoined) {
+    return (
+      <div style={styles.loading}>
+        <p>Connecting to canvas...</p>
+      </div>
+    );
+  }
 
   return (
     <div style={styles.container}>
-      {/* Top bar */}
       <div style={styles.topBar}>
         <button style={styles.backBtn} onClick={() => navigate('/dashboard')}>
           ← Dashboard
         </button>
-        <span style={styles.roomName}>{roomName || roomId}</span>
+
+        <div style={styles.center}>
+          <span style={styles.roomName}>{roomId}</span>
+        </div>
+
         <div style={styles.actions}>
+          <ActiveUsers />
           {isDirty && <span style={styles.unsaved}>Unsaved changes</span>}
           {error && <span style={styles.error}>{error}</span>}
           <button
-            style={{
-              ...styles.saveBtn,
-              opacity: saving ? 0.6 : 1,
-            }}
+            style={{ ...styles.saveBtn, opacity: saving ? 0.6 : 1 }}
             onClick={handleSave}
             disabled={saving}
           >
-            {saving ? 'Saving...' : 'Save  (Ctrl+S)'}
+            {saving ? 'Saving...' : 'Save (Ctrl+S)'}
           </button>
         </div>
       </div>
 
-      {/* Main area */}
       <div style={styles.main}>
         <ComponentLibrary onAddNode={handleAddNode} />
         <div style={styles.canvasWrapper}>
-          <Canvas />
+          <Canvas
+            onEmitOperation={handleEmitOperation}
+            onCursorMove={emitCursor}
+          />
+          <CursorOverlay />
         </div>
       </div>
     </div>
@@ -102,6 +107,13 @@ export default function RoomPage() {
 
 const styles: Record<string, React.CSSProperties> = {
   container: { display: 'flex', flexDirection: 'column', height: '100vh' },
+  loading: {
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: '100vh',
+    color: '#6b7280',
+  },
   topBar: {
     display: 'flex',
     alignItems: 'center',
@@ -118,6 +130,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '0.9rem',
     color: '#2563eb',
   },
+  center: { position: 'absolute', left: '50%', transform: 'translateX(-50%)' },
   roomName: { fontWeight: 600, fontSize: '1rem' },
   actions: { display: 'flex', alignItems: 'center', gap: '1rem' },
   unsaved: { fontSize: '0.85rem', color: '#9ca3af' },
@@ -132,5 +145,5 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '0.9rem',
   },
   main: { display: 'flex', flex: 1, overflow: 'hidden' },
-  canvasWrapper: { flex: 1, height: '100%' },
+  canvasWrapper: { flex: 1, height: '100%', position: 'relative' },
 };

@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CanvasState } from '../database/entities/canvas-state.entity';
 import { RoomsService } from '../rooms/rooms.service';
+import { CanvasStateData } from './types/canvas.types';
 
 @Injectable()
 export class CanvasStateService {
@@ -59,5 +60,28 @@ export class CanvasStateService {
     await this.canvasStateRepository.save(state);
 
     return { revision: state.revision };
+  }
+
+  async getRawState(roomId: string) {
+    return this.canvasStateRepository.findOne({ where: { roomId } });
+  }
+
+  async persistState(roomId: string, state: CanvasStateData): Promise<void> {
+    let entity = await this.canvasStateRepository.findOne({ where: { roomId } });
+
+    if (!entity) {
+      entity = this.canvasStateRepository.create({
+        roomId,
+        nodes: state.nodes,
+        edges: state.edges,
+        revision: state.revision,
+      });
+    } else {
+      entity.nodes = state.nodes;
+      entity.edges = state.edges;
+      entity.revision = state.revision;
+    }
+
+    await this.canvasStateRepository.save(entity);
   }
 }

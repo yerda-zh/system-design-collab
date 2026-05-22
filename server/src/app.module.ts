@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './auth/auth.module';
 import { RoomsModule } from './rooms/rooms.module';
 import { CanvasStateModule } from './canvas/canvas-state.module';
+import { RedisModule } from './redis/redis.module';
 
 @Module({
   imports: [
@@ -28,7 +29,7 @@ import { CanvasStateModule } from './canvas/canvas-state.module';
       }),
       inject: [ConfigService],
     }),
-
+    RedisModule,
     AuthModule,
     RoomsModule,
     CanvasStateModule,
