@@ -11,9 +11,10 @@ import type {
   RoomStatePayload,
   OperationAckPayload,
 } from '../types/events';
+import { useNavigate } from 'react-router-dom';
 
 export function useCollaboration(roomId: string) {
-  const { user } = useAuthStore();
+  const { user, logout } = useAuthStore();
   const { setNodes, setEdges, setRevision, addNode } = useCanvasStore();
   const {
     setActiveUsers,
@@ -52,8 +53,15 @@ export function useCollaboration(roomId: string) {
     [],
   );
 
+  const navigate = useNavigate();
+
   useEffect(() => {
     if (!user || !roomId) return;
+
+    socketService.onAuthError(() => {
+      logout();
+      navigate('/login');
+    });
 
     // Connect and join the room
     socketService.connect();
@@ -62,7 +70,7 @@ export function useCollaboration(roomId: string) {
     // Handler: server sends full canvas state when we join
     const onRoomState = (payload: RoomStatePayload) => {
       setNodes(payload.nodes as Node<NodeData>[]);
-      setEdges(payload.edges as Edge[]);
+      setEdges(payload.edges.map((e) => ({ ...e, type: 'custom' })) as Edge[]);
       setRevision(payload.revision);
       serverRevision.current = payload.revision;
       setActiveUsers(payload.activeUsers);
@@ -112,7 +120,7 @@ export function useCollaboration(roomId: string) {
         case 'addEdge':
           setEdges([
             ...useCanvasStore.getState().edges,
-            operation.edge as Edge,
+            { ...operation.edge, type: 'custom' } as Edge,
           ]);
           break;
 
@@ -198,7 +206,7 @@ export function useCollaboration(roomId: string) {
   }, [roomId, user, setNodes, setEdges, 
     setRevision, addNode, setActiveUsers, 
     addActiveUser, removeActiveUser, updateCursor, 
-    removeCursor, setConnected, setJoined]);
+    removeCursor, setConnected, setJoined, logout, navigate]);
 
   return { emitOperation, emitCursor };
 }

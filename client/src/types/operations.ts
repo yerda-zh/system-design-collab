@@ -26,7 +26,10 @@ export interface CanvasEdge {
   id: string;
   source: string;
   target: string;
+  sourceHandle?: string;
+  targetHandle?: string;
   label?: string;
+  data?: { edgeType: string };
 }
 
 export interface AddNodeOperation extends BaseOperation {

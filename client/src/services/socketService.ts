@@ -20,6 +20,12 @@ class SocketService {
   private socket: Socket | null = null;
   // Queue of events to emit once the socket connects
   private pendingEmits: { event: string; data: unknown }[] = []
+  private onAuthErrorCallback: (() => void) | null = null;
+
+  onAuthError(callback: () => void): void {
+    this.onAuthErrorCallback = callback;
+  }
+
 
   connect(): void {
     if (this.socket?.connected) return;
@@ -52,7 +58,7 @@ class SocketService {
       if (err.message.toLowerCase().includes('unauthorized') ||
           err.message.toLowerCase().includes('invalid token') ||
           err.message.toLowerCase().includes('jwt')) {
-        useAuthStore.getState().logout();
+        this.onAuthErrorCallback?.();
       }
     });
   }
@@ -61,6 +67,7 @@ class SocketService {
     this.socket?.disconnect();
     this.socket = null;
     this.pendingEmits = [];
+    this.onAuthErrorCallback = null;
   }
 
   emit(event: string, data: unknown): void {

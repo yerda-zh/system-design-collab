@@ -5,7 +5,7 @@ import {
   applyEdgeChanges,
 } from '@xyflow/react';
 import type {Node, Edge, NodeChange, EdgeChange, Connection} from '@xyflow/react';
-import type { NodeData } from '../types';
+import type { NodeData, EdgeType } from '../types';
 
 interface CanvasState {
   nodes: Node<NodeData>[];
@@ -19,7 +19,8 @@ interface CanvasState {
   setRevision: (revision: number) => void;
   onNodesChange: (changes: NodeChange[]) => void;
   onEdgesChange: (changes: EdgeChange[]) => void;
-  onConnect: (connection: Connection) => void;
+  addPendingEdge: (connection: Connection) => void;
+  addEdgeWithType: (connection: Connection, edgeType: EdgeType) => void;
   addNode: (node: Node<NodeData>) => void;
   markSaved: () => void;
   deleteEdge: (edgeId: string) => void;
@@ -53,9 +54,21 @@ export const useCanvasStore = create<CanvasState>((set) => ({
       isDirty: true,
     })),
 
-  onConnect: (connection) =>
+  addPendingEdge: (connection) =>
     set((state) => ({
-      edges: addEdge(connection, state.edges),
+      edges: addEdge(
+        { ...connection, type: 'custom', data: { pending: true } },
+        state.edges,
+      ),
+      isDirty: true,
+    })),
+
+  addEdgeWithType: (connection, edgeType) =>
+    set((state) => ({
+      edges: addEdge(
+        { ...connection, type: 'custom', data: { edgeType } },
+        state.edges,
+      ),
       isDirty: true,
     })),
 

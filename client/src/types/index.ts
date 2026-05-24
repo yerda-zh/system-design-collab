@@ -9,7 +9,14 @@ export type NodeType =
   | 'cdn';
 
 // Edge (connection) types
-export type EdgeType = 'http' | 'grpc' | 'pubsub' | 'asyncQueue';
+export type EdgeType = 'http' | 'grpc' | 'async' | 'pubsub';
+
+export const EDGE_CONFIG: Record<EdgeType, { label: string; color: string; animated: boolean; strokeDasharray?: string }> = {
+  http:   { label: 'HTTP/REST', color: '#6b7280', animated: false },
+  grpc:   { label: 'gRPC',      color: '#2563eb', animated: false },
+  async:  { label: 'Async',     color: '#d97706', animated: true  },
+  pubsub: { label: 'Pub/Sub',   color: '#16a34a', animated: true  },
+};
 
 // The data stored inside each node
 export interface NodeData extends Record<string, unknown> {

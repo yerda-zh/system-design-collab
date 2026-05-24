@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ReactFlow,
   Background,
@@ -10,11 +10,13 @@ import {
 import type { NodeChange, EdgeChange, Connection, NodeMouseHandler, EdgeMouseHandler } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { nodeTypes } from './nodes';
+import { edgeTypes } from './edges';
 import { useCanvasStore } from '../../store/canvasStore';
-import type { NodeType, NodeData } from '../../types';
+import type { NodeType, NodeData, EdgeType } from '../../types';
 import type { Node } from '@xyflow/react';
 import ContextMenu from './ContextMenu';
 import CursorOverlay from './CursorOverlay';
+import EdgeTypePopup from './EdgeTypePopup';
 
 interface ContextMenuState {
   x: number;
@@ -37,11 +39,19 @@ function CanvasInner({ onEmitOperation, onCursorMove }: CanvasInnerProps) {
     edges,
     onNodesChange,
     onEdgesChange,
-    onConnect,
     addNode,
+    addPendingEdge,
+    addEdgeWithType,
   } = useCanvasStore();
 
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
+  const [pendingConnection, setPendingConnection] = useState<{
+    connection: Connection;
+    edgeId: string;
+    x: number;
+    y: number;
+  } | null>(null);
+  const mousePositionRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
   // Called by the sidebar when user clicks a component
   // Adds a new node at the center of the visible canvas area
@@ -120,32 +130,46 @@ function CanvasInner({ onEmitOperation, onCursorMove }: CanvasInnerProps) {
 
   const handleConnect = useCallback(
     (connection: Connection) => {
-      // Let React Flow generate the edge with its own ID format
-      // by calling onConnect first
-      onConnect(connection);
-
-      // Now read the actual edge React Flow just created from the store
-      // It will be the last edge in the array
-      const edges = useCanvasStore.getState().edges;
-      const newEdge = edges[edges.length - 1];
-
-      if (newEdge) {
-        onEmitOperation({ type: 'addEdge', edge: {
-          id: newEdge.id,
-          source: newEdge.source,
-          target: newEdge.target,
-          sourceHandle: newEdge.sourceHandle ?? undefined,
-          targetHandle: newEdge.targetHandle ?? undefined,
-        }});
-      }
+      addPendingEdge(connection);
+      const newEdge = useCanvasStore.getState().edges.at(-1);
+      if (!newEdge) return;
+      setPendingConnection({
+        connection,
+        edgeId: newEdge.id,
+        x: mousePositionRef.current.x,
+        y: mousePositionRef.current.y,
+      });
     },
-    [onConnect, onEmitOperation],
+    [addPendingEdge],
+  );
+
+  const handleEdgeTypeSelect = useCallback(
+    (edgeType: EdgeType) => {
+      if (!pendingConnection) return;
+      useCanvasStore.getState().removeEdge(pendingConnection.edgeId);
+      addEdgeWithType(pendingConnection.connection, edgeType);
+      const newEdge = useCanvasStore.getState().edges.at(-1);
+      if (newEdge) {
+        onEmitOperation({
+          type: 'addEdge',
+          edge: {
+            id: newEdge.id,
+            source: newEdge.source,
+            target: newEdge.target,
+            sourceHandle: newEdge.sourceHandle ?? undefined,
+            targetHandle: newEdge.targetHandle ?? undefined,
+            data: { edgeType },
+          },
+        });
+      }
+      setPendingConnection(null);
+    },
+    [pendingConnection, addEdgeWithType, onEmitOperation],
   );
 
   const handleMouseMove = useCallback(
     (e: React.MouseEvent) => {
-      // Convert screen position to canvas position
-      // This accounts for zoom level and pan offset
+      mousePositionRef.current = { x: e.clientX, y: e.clientY };
       const canvasPosition = screenToFlowPosition({
         x: e.clientX,
         y: e.clientY,
@@ -243,6 +267,7 @@ function CanvasInner({ onEmitOperation, onCursorMove }: CanvasInnerProps) {
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
         onNodesChange={handleNodesChange}
         onEdgesChange={handleEdgesChange}
         onConnect={handleConnect}
@@ -269,6 +294,18 @@ function CanvasInner({ onEmitOperation, onCursorMove }: CanvasInnerProps) {
           y={contextMenu.y}
           onDelete={handleContextMenuDelete}
           onClose={() => setContextMenu(null)}
+        />
+      )}
+
+      {pendingConnection && (
+        <EdgeTypePopup
+          x={pendingConnection.x}
+          y={pendingConnection.y}
+          onSelect={handleEdgeTypeSelect}
+          onClose={() => {
+            useCanvasStore.getState().removeEdge(pendingConnection.edgeId);
+            setPendingConnection(null);
+          }}
         />
       )}
     </>
