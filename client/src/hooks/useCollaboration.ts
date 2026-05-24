@@ -153,6 +153,12 @@ export function useCollaboration(roomId: string) {
       removeCursor(data.userId);
     };
 
+    const onError = (data: { message: string }) => {
+      if (data.message === 'unauthorized') {
+        useAuthStore.getState().logout();
+      }
+    };
+
     // Register all event handlers
     socketService.on(WS_EVENTS.ROOM_STATE, onRoomState as (...args: unknown[]) => void);
     socketService.on(WS_EVENTS.OPERATION_BROADCAST, onOperationBroadcast as (...args: unknown[]) => void);
@@ -160,6 +166,7 @@ export function useCollaboration(roomId: string) {
     socketService.on(WS_EVENTS.CURSOR_BROADCAST, onCursorBroadcast as (...args: unknown[]) => void);
     socketService.on(WS_EVENTS.USER_JOINED, onUserJoined as (...args: unknown[]) => void);
     socketService.on(WS_EVENTS.USER_LEFT, onUserLeft as (...args: unknown[]) => void);
+    socketService.on(WS_EVENTS.ERROR, onError as (...args: unknown[]) => void);
 
     // Join the room
     socketService.emit(WS_EVENTS.JOIN_ROOM, {
@@ -175,6 +182,7 @@ export function useCollaboration(roomId: string) {
       socketService.off(WS_EVENTS.CURSOR_BROADCAST, onCursorBroadcast as (...args: unknown[]) => void);
       socketService.off(WS_EVENTS.USER_JOINED, onUserJoined as (...args: unknown[]) => void);
       socketService.off(WS_EVENTS.USER_LEFT, onUserLeft as (...args: unknown[]) => void);
+      socketService.off(WS_EVENTS.ERROR, onError as (...args: unknown[]) => void);
       socketService.disconnect();
 
       // Clear all cursors and active users when leaving the room

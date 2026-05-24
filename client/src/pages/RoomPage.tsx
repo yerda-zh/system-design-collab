@@ -2,7 +2,6 @@ import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Canvas from '../components/canvas/Canvas';
 import ComponentLibrary from '../components/sidebar/ComponentLibrary';
-import CursorOverlay from '../components/canvas/CursorOverlay';
 import ActiveUsers from '../components/collaboration/ActiveUsers';
 import { saveCanvas } from '../api/canvas';
 import { useCanvasStore } from '../store/canvasStore';
@@ -98,7 +97,6 @@ export default function RoomPage() {
             onEmitOperation={handleEmitOperation}
             onCursorMove={emitCursor}
           />
-          <CursorOverlay />
         </div>
       </div>
     </div>

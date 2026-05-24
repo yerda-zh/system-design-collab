@@ -30,10 +30,14 @@ export default function BaseNode({ data, selected }: BaseNodeProps) {
     >
       {/* Handles are the connection points on the node */}
       {/* They appear as small dots where you can drag edges from */}
-      <Handle type="target" position={Position.Top} style={styles.handle} />
-      <Handle type="source" position={Position.Bottom} style={styles.handle} />
-      <Handle type="target" position={Position.Left} style={styles.handle} />
-      <Handle type="source" position={Position.Right} style={styles.handle} />
+      <Handle type="source" position={Position.Top}    id="top-source"    style={styles.handle} />
+      <Handle type="target" position={Position.Top}    id="top-target"    style={styles.handle} />
+      <Handle type="source" position={Position.Bottom} id="bottom-source" style={styles.handle} />
+      <Handle type="target" position={Position.Bottom} id="bottom-target" style={styles.handle} />
+      <Handle type="source" position={Position.Left}   id="left-source"   style={styles.handle} />
+      <Handle type="target" position={Position.Left}   id="left-target"   style={styles.handle} />
+      <Handle type="source" position={Position.Right}  id="right-source"  style={styles.handle} />
+      <Handle type="target" position={Position.Right}  id="right-target"  style={styles.handle} />
 
       <div
         style={{ ...styles.header, backgroundColor: config.color }}

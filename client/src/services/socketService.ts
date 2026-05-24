@@ -49,12 +49,18 @@ class SocketService {
 
     this.socket.on('connect_error', (err) => {
       console.error('WebSocket connection error:', err.message);
+      if (err.message.toLowerCase().includes('unauthorized') ||
+          err.message.toLowerCase().includes('invalid token') ||
+          err.message.toLowerCase().includes('jwt')) {
+        useAuthStore.getState().logout();
+      }
     });
   }
 
   disconnect(): void {
     this.socket?.disconnect();
     this.socket = null;
+    this.pendingEmits = [];
   }
 
   emit(event: string, data: unknown): void {

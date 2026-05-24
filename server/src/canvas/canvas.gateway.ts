@@ -57,6 +57,7 @@ export class CanvasGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       if (!token) {
         this.logger.warn(`Socket ${socket.id} connected without token`);
+        socket.emit(WS_EVENTS.ERROR, { message: 'unauthorized' });
         socket.disconnect();
         return;
       }
@@ -74,6 +75,7 @@ export class CanvasGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.logger.debug(`Socket connected: ${socket.id} (user: ${payload.sub})`);
     } catch {
       this.logger.warn(`Socket ${socket.id} — invalid token, disconnecting`);
+      socket.emit(WS_EVENTS.ERROR, { message: 'unauthorized' });
       socket.disconnect();
     }
   }

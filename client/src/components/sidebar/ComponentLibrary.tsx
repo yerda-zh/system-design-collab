@@ -16,16 +16,28 @@ interface ComponentLibraryProps {
 }
 
 export default function ComponentLibrary({ onAddNode }: ComponentLibraryProps) {
+  const handleDragStart = (
+    e: React.DragEvent,
+    nodeType: NodeType,
+  ) => {
+    // Store the node type in the drag event's data transfer
+    // so the canvas drop handler knows what type to create
+    e.dataTransfer.setData('application/nodeType', nodeType);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
   return (
     <div style={styles.sidebar}>
       <h3 style={styles.title}>Components</h3>
-      <p style={styles.hint}>Click to add to canvas</p>
+      <p style={styles.hint}>Click or drag onto canvas</p>
       <div style={styles.list}>
         {COMPONENTS.map((comp) => (
           <div
             key={comp.nodeType}
             style={styles.item}
+            draggable
             onClick={() => onAddNode(comp.nodeType)}
+            onDragStart={(e) => handleDragStart(e, comp.nodeType)}
           >
             <span style={styles.icon}>{comp.icon}</span>
             <div>

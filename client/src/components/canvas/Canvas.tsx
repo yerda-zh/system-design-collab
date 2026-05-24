@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ReactFlow,
   Background,
@@ -7,12 +7,21 @@ import {
   useReactFlow,
   ReactFlowProvider,
 } from '@xyflow/react';
-import type { NodeChange, EdgeChange, Connection } from '@xyflow/react';
+import type { NodeChange, EdgeChange, Connection, NodeMouseHandler, EdgeMouseHandler } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { nodeTypes } from './nodes';
 import { useCanvasStore } from '../../store/canvasStore';
 import type { NodeType, NodeData } from '../../types';
 import type { Node } from '@xyflow/react';
+import ContextMenu from './ContextMenu';
+import CursorOverlay from './CursorOverlay';
+
+interface ContextMenuState {
+  x: number;
+  y: number;
+  targetId: string;
+  targetType: 'node' | 'edge';
+}
 
 interface CanvasInnerProps {
   onEmitOperation: (op: object) => void;
@@ -31,6 +40,8 @@ function CanvasInner({ onEmitOperation, onCursorMove }: CanvasInnerProps) {
     onConnect,
     addNode,
   } = useCanvasStore();
+
+  const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
 
   // Called by the sidebar when user clicks a component
   // Adds a new node at the center of the visible canvas area
@@ -133,29 +144,134 @@ function CanvasInner({ onEmitOperation, onCursorMove }: CanvasInnerProps) {
 
   const handleMouseMove = useCallback(
     (e: React.MouseEvent) => {
-      onCursorMove(e.clientX, e.clientY);
+      // Convert screen position to canvas position
+      // This accounts for zoom level and pan offset
+      const canvasPosition = screenToFlowPosition({
+        x: e.clientX,
+        y: e.clientY,
+      });
+      onCursorMove(canvasPosition.x, canvasPosition.y);
     },
-    [onCursorMove],
+    [onCursorMove, screenToFlowPosition],
+  );
+
+  // Right-click on a node
+  const handleNodeContextMenu: NodeMouseHandler = useCallback(
+    (e, node) => {
+      e.preventDefault();
+      setContextMenu({
+        x: e.clientX,
+        y: e.clientY,
+        targetId: node.id,
+        targetType: 'node',
+      });
+    },
+    [],
+  );
+
+  // Right-click on an edge
+  const handleEdgeContextMenu: EdgeMouseHandler = useCallback(
+    (e, edge) => {
+      e.preventDefault();
+      setContextMenu({
+        x: e.clientX,
+        y: e.clientY,
+        targetId: edge.id,
+        targetType: 'edge',
+      });
+    },
+    [],
+  );
+
+  // Close menu when clicking on the canvas background
+  const handlePaneClick = useCallback(() => {
+    setContextMenu(null);
+  }, []);
+
+  const handleContextMenuDelete = useCallback(() => {
+    if (!contextMenu) return;
+
+    if (contextMenu.targetType === 'node') {
+      useCanvasStore.getState().removeNode(contextMenu.targetId);
+      onEmitOperation({ type: 'deleteNode', nodeId: contextMenu.targetId });
+    } else {
+      useCanvasStore.getState().removeEdge(contextMenu.targetId);
+      onEmitOperation({ type: 'deleteEdge', edgeId: contextMenu.targetId });
+    }
+  }, [contextMenu, onEmitOperation]);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    // Must call preventDefault to allow dropping
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  }, []);
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+
+      const nodeType = e.dataTransfer.getData('application/nodeType') as NodeType;
+
+      // Ignore drops that didn't come from our sidebar
+      if (!nodeType) return;
+
+      // Convert the screen drop position to canvas coordinates
+      const position = screenToFlowPosition({
+        x: e.clientX,
+        y: e.clientY,
+      });
+
+      const newNode: Node<NodeData> = {
+        id: `${nodeType}-${Date.now()}`,
+        type: nodeType,
+        position,
+        data: {
+          label: nodeType.charAt(0).toUpperCase() + nodeType.slice(1),
+          nodeType,
+        },
+      };
+
+      addNode(newNode);
+      onEmitOperation({ type: 'addNode', node: newNode });
+    },
+    [screenToFlowPosition, addNode, onEmitOperation],
   );
 
   return (
-    <ReactFlow
-      nodes={nodes}
-      edges={edges}
-      nodeTypes={nodeTypes}
-      onNodesChange={handleNodesChange}
-      onEdgesChange={handleEdgesChange}
-      onConnect={handleConnect}
-      onMouseMove={handleMouseMove}
-      fitView
-    >
-      {/* Background shows the dot grid pattern */}
-      <Background />
-      {/* Controls adds zoom in/out/fit buttons */}
-      <Controls />
-      {/* MiniMap shows a small overview of the whole canvas */}
-      <MiniMap />
-    </ReactFlow>
+    <>
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        nodeTypes={nodeTypes}
+        onNodesChange={handleNodesChange}
+        onEdgesChange={handleEdgesChange}
+        onConnect={handleConnect}
+        onMouseMove={handleMouseMove}
+        onNodeContextMenu={handleNodeContextMenu}
+        onEdgeContextMenu={handleEdgeContextMenu}
+        onPaneClick={handlePaneClick}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+        deleteKeyCode={['Backspace', 'Delete']}
+        fitView
+      >
+        <Background />
+        <Controls />
+        <MiniMap />
+      </ReactFlow>
+
+      {/* CursorOverlay is inside ReactFlowProvider so it can use useReactFlow() */}
+      <CursorOverlay />
+
+      {contextMenu && (
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          onDelete={handleContextMenuDelete}
+          onClose={() => setContextMenu(null)}
+        />
+      )}
+    </>
   );
 }
 

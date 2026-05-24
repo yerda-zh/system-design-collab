@@ -17,4 +17,17 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Response interceptor — runs after every response
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    // If the server returns 401, the token is expired or invalid
+    // Clear auth state so the user is redirected to login
+    if (error.response?.status === 401) {
+      useAuthStore.getState().logout();
+    }
+    return Promise.reject(error);
+  },
+);
+
 export default api;
