@@ -1,7 +1,13 @@
 import type { NodeType } from '../../types';
+import WarningPanel from './WarningPanel';
 
 // Each item the user can drag onto the canvas
-const COMPONENTS: { nodeType: NodeType; label: string; icon: string; description: string }[] = [
+const COMPONENTS: {
+  nodeType: NodeType;
+  label: string;
+  icon: string;
+  description: string;
+}[] = [
   { nodeType: 'database',     label: 'Database',      icon: '🗄️', description: 'PostgreSQL, MySQL, MongoDB' },
   { nodeType: 'cache',        label: 'Cache',         icon: '⚡', description: 'Redis, Memcached' },
   { nodeType: 'queue',        label: 'Message Queue', icon: '📨', description: 'Kafka, RabbitMQ, SQS' },
@@ -13,40 +19,45 @@ const COMPONENTS: { nodeType: NodeType; label: string; icon: string; description
 
 interface ComponentLibraryProps {
   onAddNode: (nodeType: NodeType) => void;
+  onSelectNode: (nodeId: string) => void;
 }
 
-export default function ComponentLibrary({ onAddNode }: ComponentLibraryProps) {
-  const handleDragStart = (
-    e: React.DragEvent,
-    nodeType: NodeType,
-  ) => {
-    // Store the node type in the drag event's data transfer
-    // so the canvas drop handler knows what type to create
+export default function ComponentLibrary({
+  onAddNode,
+  onSelectNode,
+}: ComponentLibraryProps) {
+  const handleDragStart = (e: React.DragEvent, nodeType: NodeType) => {
     e.dataTransfer.setData('application/nodeType', nodeType);
     e.dataTransfer.effectAllowed = 'move';
   };
 
   return (
     <div style={styles.sidebar}>
-      <h3 style={styles.title}>Components</h3>
-      <p style={styles.hint}>Click or drag onto canvas</p>
-      <div style={styles.list}>
-        {COMPONENTS.map((comp) => (
-          <div
-            key={comp.nodeType}
-            style={styles.item}
-            draggable
-            onClick={() => onAddNode(comp.nodeType)}
-            onDragStart={(e) => handleDragStart(e, comp.nodeType)}
-          >
-            <span style={styles.icon}>{comp.icon}</span>
-            <div>
-              <p style={styles.itemLabel}>{comp.label}</p>
-              <p style={styles.itemDesc}>{comp.description}</p>
+      {/* Component list */}
+      <div style={styles.components}>
+        <h3 style={styles.title}>Components</h3>
+        <p style={styles.hint}>Click or drag onto canvas</p>
+        <div style={styles.list}>
+          {COMPONENTS.map((comp) => (
+            <div
+              key={comp.nodeType}
+              style={styles.item}
+              draggable
+              onClick={() => onAddNode(comp.nodeType)}
+              onDragStart={(e) => handleDragStart(e, comp.nodeType)}
+            >
+              <span style={styles.icon}>{comp.icon}</span>
+              <div>
+                <p style={styles.itemLabel}>{comp.label}</p>
+                <p style={styles.itemDesc}>{comp.description}</p>
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
+
+      {/* Warning panel docked to the bottom of the sidebar */}
+      <WarningPanel onSelectNode={onSelectNode} />
     </div>
   );
 }
@@ -58,7 +69,12 @@ const styles: Record<string, React.CSSProperties> = {
     borderRight: '1px solid #e5e7eb',
     display: 'flex',
     flexDirection: 'column',
+    justifyContent: 'space-between',
+    overflowY: 'auto',
+  },
+  components: {
     padding: '1rem',
+    flex: 1,
     overflowY: 'auto',
   },
   title: { margin: '0 0 0.25rem', fontSize: '1rem' },
@@ -71,7 +87,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '0.6rem',
     borderRadius: '6px',
     border: '1px solid #e5e7eb',
-    cursor: 'pointer',
+    cursor: 'grab',
     transition: 'background 0.15s',
   },
   icon: { fontSize: '1.4rem' },

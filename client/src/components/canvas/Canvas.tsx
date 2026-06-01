@@ -7,13 +7,19 @@ import {
   useReactFlow,
   ReactFlowProvider,
 } from '@xyflow/react';
-import type { NodeChange, EdgeChange, Connection, NodeMouseHandler, EdgeMouseHandler } from '@xyflow/react';
+import type {
+  NodeChange,
+  EdgeChange,
+  Connection,
+  NodeMouseHandler,
+  EdgeMouseHandler,
+  Node,
+} from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { nodeTypes } from './nodes';
 import { edgeTypes } from './edges';
 import { useCanvasStore } from '../../store/canvasStore';
 import type { NodeType, NodeData, EdgeType } from '../../types';
-import type { Node } from '@xyflow/react';
 import ContextMenu from './ContextMenu';
 import CursorOverlay from './CursorOverlay';
 import EdgeTypePopup from './EdgeTypePopup';
@@ -30,10 +36,9 @@ interface CanvasInnerProps {
   onCursorMove: (x: number, y: number) => void;
 }
 
-// We need this inner component because useReactFlow() only works
-// inside a ReactFlowProvider — explained below
 function CanvasInner({ onEmitOperation, onCursorMove }: CanvasInnerProps) {
-  const { screenToFlowPosition } = useReactFlow();
+  const { screenToFlowPosition, fitView } = useReactFlow();
+
   const {
     nodes,
     edges,
@@ -42,6 +47,7 @@ function CanvasInner({ onEmitOperation, onCursorMove }: CanvasInnerProps) {
     addNode,
     addPendingEdge,
     addEdgeWithType,
+    highlightedNodeId,
   } = useCanvasStore();
 
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
@@ -51,14 +57,12 @@ function CanvasInner({ onEmitOperation, onCursorMove }: CanvasInnerProps) {
     x: number;
     y: number;
   } | null>(null);
+
   const mousePositionRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
-  // Called by the sidebar when user clicks a component
-  // Adds a new node at the center of the visible canvas area
+  // Registers add node handler for sidebar clicks
   const handleAddNode = useCallback(
     (nodeType: NodeType) => {
-      // screenToFlowPosition converts screen coordinates to canvas coordinates
-      // accounting for zoom and pan
       const position = screenToFlowPosition({
         x: window.innerWidth / 2,
         y: window.innerHeight / 2,
@@ -80,21 +84,34 @@ function CanvasInner({ onEmitOperation, onCursorMove }: CanvasInnerProps) {
     [screenToFlowPosition, addNode, onEmitOperation],
   );
 
-  // Expose handleAddNode to the parent via the onAddNode prop pattern
   useEffect(() => {
-    // This registers the handleAddNode function so the sidebar can call it
     window.__addNode = handleAddNode;
     return () => {
       window.__addNode = undefined;
     };
   }, [handleAddNode]);
 
+  // Pan and zoom to the highlighted node when a warning is clicked
+  useEffect(() => {
+    if (!highlightedNodeId) return;
+    fitView({
+      nodes: [{ id: highlightedNodeId }],
+      duration: 500,
+      padding: 0.5,
+    });
+  }, [highlightedNodeId, fitView]);
+
   const handleNodesChange = useCallback(
     (changes: NodeChange[]) => {
       const { isApplyingRemote } = useCanvasStore.getState();
 
       changes.forEach((change) => {
-        if (change.type === 'position' && change.dragging === false && change.position && !isApplyingRemote) {
+        if (
+          change.type === 'position' &&
+          change.dragging === false &&
+          change.position &&
+          !isApplyingRemote
+        ) {
           onEmitOperation({
             type: 'moveNode',
             nodeId: change.id,
@@ -179,7 +196,6 @@ function CanvasInner({ onEmitOperation, onCursorMove }: CanvasInnerProps) {
     [onCursorMove, screenToFlowPosition],
   );
 
-  // Right-click on a node
   const handleNodeContextMenu: NodeMouseHandler = useCallback(
     (e, node) => {
       e.preventDefault();
@@ -193,7 +209,6 @@ function CanvasInner({ onEmitOperation, onCursorMove }: CanvasInnerProps) {
     [],
   );
 
-  // Right-click on an edge
   const handleEdgeContextMenu: EdgeMouseHandler = useCallback(
     (e, edge) => {
       e.preventDefault();
@@ -207,14 +222,12 @@ function CanvasInner({ onEmitOperation, onCursorMove }: CanvasInnerProps) {
     [],
   );
 
-  // Close menu when clicking on the canvas background
   const handlePaneClick = useCallback(() => {
     setContextMenu(null);
   }, []);
 
   const handleContextMenuDelete = useCallback(() => {
     if (!contextMenu) return;
-
     if (contextMenu.targetType === 'node') {
       useCanvasStore.getState().removeNode(contextMenu.targetId);
       onEmitOperation({ type: 'deleteNode', nodeId: contextMenu.targetId });
@@ -225,7 +238,6 @@ function CanvasInner({ onEmitOperation, onCursorMove }: CanvasInnerProps) {
   }, [contextMenu, onEmitOperation]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
-    // Must call preventDefault to allow dropping
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
   }, []);
@@ -233,13 +245,9 @@ function CanvasInner({ onEmitOperation, onCursorMove }: CanvasInnerProps) {
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
-
       const nodeType = e.dataTransfer.getData('application/nodeType') as NodeType;
-
-      // Ignore drops that didn't come from our sidebar
       if (!nodeType) return;
 
-      // Convert the screen drop position to canvas coordinates
       const position = screenToFlowPosition({
         x: e.clientX,
         y: e.clientY,
@@ -285,7 +293,6 @@ function CanvasInner({ onEmitOperation, onCursorMove }: CanvasInnerProps) {
         <MiniMap />
       </ReactFlow>
 
-      {/* CursorOverlay is inside ReactFlowProvider so it can use useReactFlow() */}
       <CursorOverlay />
 
       {contextMenu && (
@@ -317,9 +324,6 @@ interface CanvasProps {
   onCursorMove: (x: number, y: number) => void;
 }
 
-// ReactFlowProvider gives React Flow access to internal context
-// (zoom level, viewport position, etc.)
-// It must wrap any component that uses useReactFlow()
 export default function Canvas({ onEmitOperation, onCursorMove }: CanvasProps) {
   return (
     <ReactFlowProvider>

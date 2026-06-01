@@ -15,7 +15,6 @@ export default function RoomPage() {
 
   const { nodes, edges, setRevision, isDirty, markSaved } = useCanvasStore();
   const { isJoined } = useCollaborationStore();
-
   const { emitOperation, emitCursor } = useCollaboration(roomId!);
 
   const [saving, setSaving] = useState(false);
@@ -33,7 +32,7 @@ export default function RoomPage() {
     } finally {
       setSaving(false);
     }
-  }, [roomId, nodes, edges, saving, markSaved, setRevision]);
+  }, [roomId, nodes, edges, saving, setRevision, markSaved]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -49,6 +48,11 @@ export default function RoomPage() {
   const handleAddNode = (nodeType: NodeType) => {
     window.__addNode?.(nodeType);
   };
+
+  const handleSelectNode = useCallback((nodeId: string) => {
+    useCanvasStore.getState().setHighlightedNodeId(nodeId);
+    setTimeout(() => useCanvasStore.getState().setHighlightedNodeId(null), 2000);
+  }, []);
 
   const handleEmitOperation = useCallback(
     (op: object) => {
@@ -91,7 +95,10 @@ export default function RoomPage() {
       </div>
 
       <div style={styles.main}>
-        <ComponentLibrary onAddNode={handleAddNode} />
+        <ComponentLibrary
+          onAddNode={handleAddNode}
+          onSelectNode={handleSelectNode}
+        />
         <div style={styles.canvasWrapper}>
           <Canvas
             onEmitOperation={handleEmitOperation}

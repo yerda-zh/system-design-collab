@@ -12,6 +12,8 @@ import type {
   OperationAckPayload,
 } from '../types/events';
 import { useNavigate } from 'react-router-dom';
+import { useWarningStore } from '../store/warningStore';
+import type { Warning } from '../types/warnings';
 
 export function useCollaboration(roomId: string) {
   const { user, logout } = useAuthStore();
@@ -76,6 +78,15 @@ export function useCollaboration(roomId: string) {
       setActiveUsers(payload.activeUsers);
       setJoined(true);
     };
+
+     const onWarningUpdate = (data: { warnings: Warning[] }) => {
+        useWarningStore.getState().setWarnings(data.warnings);
+      };
+
+      socketService.on(
+        WS_EVENTS.WARNING_UPDATE,
+        onWarningUpdate as (...args: unknown[]) => void,
+      );
 
     // Handler: server broadcasts an operation from another user
     const onOperationBroadcast = (
@@ -191,7 +202,10 @@ export function useCollaboration(roomId: string) {
       socketService.off(WS_EVENTS.USER_JOINED, onUserJoined as (...args: unknown[]) => void);
       socketService.off(WS_EVENTS.USER_LEFT, onUserLeft as (...args: unknown[]) => void);
       socketService.off(WS_EVENTS.ERROR, onError as (...args: unknown[]) => void);
+      socketService.off(WS_EVENTS.WARNING_UPDATE, onWarningUpdate as (...args: unknown[]) => void);
       socketService.disconnect();
+
+      useWarningStore.getState().setWarnings([]);
 
       // Clear all cursors and active users when leaving the room
       useCollaborationStore.getState().setActiveUsers([]);
