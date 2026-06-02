@@ -146,6 +146,15 @@ export function useCollaboration(roomId: string) {
       }, 0);
     };
 
+    // Handler: another user restored a snapshot — replace full canvas state
+    const onCanvasRestored = (payload: { nodes: object[]; edges: object[]; revision: number }) => {
+      setNodes(payload.nodes as Node<NodeData>[]);
+      setEdges(payload.edges.map((e) => ({ ...e, type: 'custom' })) as Edge[]);
+      setRevision(payload.revision);
+      serverRevision.current = payload.revision;
+      useCanvasStore.getState().markSaved();
+    };
+
     // Handler: server acknowledges our operation
     const onOperationAck = (payload: OperationAckPayload) => {
       if (payload.success) {
@@ -180,6 +189,7 @@ export function useCollaboration(roomId: string) {
 
     // Register all event handlers
     socketService.on(WS_EVENTS.ROOM_STATE, onRoomState as (...args: unknown[]) => void);
+    socketService.on(WS_EVENTS.CANVAS_RESTORED, onCanvasRestored as (...args: unknown[]) => void);
     socketService.on(WS_EVENTS.OPERATION_BROADCAST, onOperationBroadcast as (...args: unknown[]) => void);
     socketService.on(WS_EVENTS.OPERATION_ACK, onOperationAck as (...args: unknown[]) => void);
     socketService.on(WS_EVENTS.CURSOR_BROADCAST, onCursorBroadcast as (...args: unknown[]) => void);
@@ -196,6 +206,7 @@ export function useCollaboration(roomId: string) {
     // Cleanup on unmount
     return () => {
       socketService.off(WS_EVENTS.ROOM_STATE, onRoomState as (...args: unknown[]) => void);
+      socketService.off(WS_EVENTS.CANVAS_RESTORED, onCanvasRestored as (...args: unknown[]) => void);
       socketService.off(WS_EVENTS.OPERATION_BROADCAST, onOperationBroadcast as (...args: unknown[]) => void);
       socketService.off(WS_EVENTS.OPERATION_ACK, onOperationAck as (...args: unknown[]) => void);
       socketService.off(WS_EVENTS.CURSOR_BROADCAST, onCursorBroadcast as (...args: unknown[]) => void);

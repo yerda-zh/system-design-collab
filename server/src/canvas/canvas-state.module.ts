@@ -22,6 +22,6 @@ import { WarningsModule } from '../warnings/warnings.module';
     CanvasSyncService,
     CanvasGateway,
   ],
-  exports: [CanvasStateService, CanvasSyncService],
+  exports: [CanvasStateService, CanvasSyncService, CanvasGateway],
 })
 export class CanvasStateModule {}

@@ -4,6 +4,7 @@ import Canvas from '../components/canvas/Canvas';
 import ComponentLibrary from '../components/sidebar/ComponentLibrary';
 import ActiveUsers from '../components/collaboration/ActiveUsers';
 import SharePopup from '../components/room/SharePopup';
+import SnapshotsPanel from '../components/room/SnapshotsPanel';
 import { saveCanvas } from '../api/canvas';
 import { getRoom } from '../api/rooms';
 import { useCanvasStore } from '../store/canvasStore';
@@ -24,6 +25,7 @@ export default function RoomPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [showShare, setShowShare] = useState(false);
+  const [showSnapshots, setShowSnapshots] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
   const [roomName, setRoomName] = useState('');
 
@@ -113,6 +115,12 @@ export default function RoomPage() {
             Share
           </button>
           <button
+            style={styles.shareBtn}
+            onClick={() => setShowSnapshots(true)}
+          >
+            Snapshots
+          </button>
+          <button
             style={{ ...styles.saveBtn, opacity: saving ? 0.6 : 1 }}
             onClick={handleSave}
             disabled={saving}
@@ -140,6 +148,13 @@ export default function RoomPage() {
           roomId={roomId}
           isOwner={isOwner}
           onClose={() => setShowShare(false)}
+        />
+      )}
+
+      {showSnapshots && roomId && (
+        <SnapshotsPanel
+          roomId={roomId}
+          onClose={() => setShowSnapshots(false)}
         />
       )}
     </div>

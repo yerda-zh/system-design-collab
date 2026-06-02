@@ -17,6 +17,7 @@ import { RoomsService } from '../rooms/rooms.service';
 import { WarningEngineService } from '../warnings/warning-engine.service';
 import { WS_EVENTS } from './types/events';
 import type { CanvasOperation } from './types/operations';
+import type { CanvasNode, CanvasEdge } from './types/canvas.types';
 import type { CursorPosition } from './types/events';
 
 interface SocketData {
@@ -212,6 +213,52 @@ export class CanvasGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   /**
+   * Client sends this when restoring a snapshot.
+   * Updates Redis + PostgreSQL atomically and broadcasts the new state
+   * to all other users so everyone sees the restored canvas immediately.
+   */
+  @SubscribeMessage(WS_EVENTS.CANVAS_RESTORE)
+  async handleCanvasRestore(
+    @ConnectedSocket() socket: Socket,
+    @MessageBody() data: { roomId: string; nodes: CanvasNode[]; edges: CanvasEdge[] },
+  ): Promise<void> {
+    const userId = (socket.data as SocketData).userId;
+
+    // Typed destructuring keeps roomId/nodes/edges as concrete types in both
+    // the CLI compiler and IDE language service, preventing any-propagation
+    // into restoreState's return value.
+    const { roomId, nodes, edges }: { roomId: string; nodes: CanvasNode[]; edges: CanvasEdge[] } = data;
+
+    try {
+      await this.roomsService.getRoom(roomId, userId);
+    } catch {
+      socket.emit(WS_EVENTS.ERROR, { message: 'Access denied to this room' });
+      return;
+    }
+
+    const newRevision: number = await this.canvasSyncService.restoreState(
+      roomId,
+      nodes,
+      edges,
+    );
+
+    // Acknowledge back to the sender with the new revision
+    socket.emit(WS_EVENTS.OPERATION_ACK, {
+      success: true,
+      serverRevision: newRevision,
+    });
+
+    // Broadcast full restored state to all other users in the room
+    socket.to(roomId).emit(WS_EVENTS.CANVAS_RESTORED, {
+      nodes,
+      edges,
+      revision: newRevision,
+    });
+
+    this.scheduleWarningAnalysis(roomId);
+  }
+
+  /**
    * Client sends cursor position updates.
    * We broadcast to everyone else in the room — ephemeral, never saved.
    */
@@ -261,6 +308,14 @@ export class CanvasGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.logger.debug(
       `Warning analysis for room ${roomId}: ${warnings.length} warnings`,
     );
+  }
+
+  broadcastSnapshotCreated(roomId: string, snapshot: unknown): void {
+    this.server.to(roomId).emit(WS_EVENTS.SNAPSHOT_CREATED, snapshot);
+  }
+
+  broadcastSnapshotDeleted(roomId: string, snapshotId: string): void {
+    this.server.to(roomId).emit(WS_EVENTS.SNAPSHOT_DELETED, { snapshotId });
   }
 
   private extractToken(socket: Socket): string | null {
