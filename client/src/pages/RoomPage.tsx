@@ -1,24 +1,46 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Canvas from '../components/canvas/Canvas';
 import ComponentLibrary from '../components/sidebar/ComponentLibrary';
 import ActiveUsers from '../components/collaboration/ActiveUsers';
+import SharePopup from '../components/room/SharePopup';
 import { saveCanvas } from '../api/canvas';
+import { getRoom } from '../api/rooms';
 import { useCanvasStore } from '../store/canvasStore';
 import { useCollaborationStore } from '../store/collaborationStore';
 import { useCollaboration } from '../hooks/useCollaboration';
+import { useAuthStore } from '../store/authStore';
 import type { NodeType } from '../types';
 
 export default function RoomPage() {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
 
+  const { user } = useAuthStore();
   const { nodes, edges, setRevision, isDirty, markSaved } = useCanvasStore();
   const { isJoined } = useCollaborationStore();
   const { emitOperation, emitCursor } = useCollaboration(roomId!);
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [showShare, setShowShare] = useState(false);
+  const [isOwner, setIsOwner] = useState(false);
+  const [roomName, setRoomName] = useState('');
+
+  // Load room details to determine if current user is the owner
+  useEffect(() => {
+    if (!roomId) return;
+    const fetchRoom = async () => {
+      try {
+        const room = await getRoom(roomId);
+        setIsOwner(room.ownerId === user?.id);
+        setRoomName(room.name);
+      } catch {
+        // Non-critical — share button still shows, just without regenerate
+      }
+    };
+    fetchRoom();
+  }, [roomId, user?.id]);
 
   const handleSave = useCallback(async () => {
     if (!roomId || saving) return;
@@ -77,13 +99,19 @@ export default function RoomPage() {
         </button>
 
         <div style={styles.center}>
-          <span style={styles.roomName}>{roomId}</span>
+          <span style={styles.roomName}>{roomName || roomId}</span>
         </div>
 
         <div style={styles.actions}>
           <ActiveUsers />
           {isDirty && <span style={styles.unsaved}>Unsaved changes</span>}
           {error && <span style={styles.error}>{error}</span>}
+          <button
+            style={styles.shareBtn}
+            onClick={() => setShowShare(true)}
+          >
+            Share
+          </button>
           <button
             style={{ ...styles.saveBtn, opacity: saving ? 0.6 : 1 }}
             onClick={handleSave}
@@ -106,6 +134,14 @@ export default function RoomPage() {
           />
         </div>
       </div>
+
+      {showShare && roomId && (
+        <SharePopup
+          roomId={roomId}
+          isOwner={isOwner}
+          onClose={() => setShowShare(false)}
+        />
+      )}
     </div>
   );
 }
@@ -137,9 +173,19 @@ const styles: Record<string, React.CSSProperties> = {
   },
   center: { position: 'absolute', left: '50%', transform: 'translateX(-50%)' },
   roomName: { fontWeight: 600, fontSize: '1rem' },
-  actions: { display: 'flex', alignItems: 'center', gap: '1rem' },
+  actions: { display: 'flex', alignItems: 'center', gap: '0.75rem' },
   unsaved: { fontSize: '0.85rem', color: '#9ca3af' },
   error: { fontSize: '0.85rem', color: 'red' },
+  shareBtn: {
+    padding: '0.5rem 1rem',
+    backgroundColor: 'white',
+    color: '#374151',
+    border: '1px solid #e5e7eb',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontSize: '0.9rem',
+    fontWeight: 500,
+  },
   saveBtn: {
     padding: '0.5rem 1rem',
     backgroundColor: '#2563eb',

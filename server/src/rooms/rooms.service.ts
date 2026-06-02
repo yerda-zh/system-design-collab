@@ -127,4 +127,18 @@ export class RoomsService {
 
         return { inviteToken: room.inviteToken };
     }
+
+    async getInviteToken(roomId: string, userId: string) {
+        const room = await this.roomsRepository.findOne({ where: { id: roomId } });
+
+        if (!room) {
+            throw new NotFoundException('Room not found');
+        }
+
+        if (room.ownerId !== userId) {
+            throw new ForbiddenException('Only the owner can access the invite link');
+        }
+
+        return { inviteToken: room.inviteToken, roomName: room.name };
+    }
 }

@@ -62,4 +62,10 @@ export class RoomsController {
     regenerateInvite(@Param('id') id: string, @Request() req: AuthenticatedRequest ) {
         return this.roomsService.regenerateInviteToken(id, req.user.id);
     }
+
+    // GET /rooms/:id/invite — get invite token (owner only)
+    @Get(':id/invite')
+    getInviteToken(@Param('id') id: string, @Request() req: AuthenticatedRequest) {
+        return this.roomsService.getInviteToken(id, req.user.id);
+    }
 }

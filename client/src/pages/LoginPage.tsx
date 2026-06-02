@@ -15,7 +15,11 @@ export default function LoginPage() {
     try {
       const res = await api.post('/auth/login', { email, password });
       setAuth(res.data.accessToken, res.data.user);
-      navigate('/dashboard');
+
+      // If there's a redirect param (e.g. from invite link), go there
+      const params = new URLSearchParams(window.location.search);
+      const redirect = params.get('redirect');
+      navigate(redirect ?? '/dashboard');
     } catch {
       setError('Invalid email or password');
     }
