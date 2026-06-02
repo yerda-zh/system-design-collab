@@ -14,6 +14,7 @@ export const WS_EVENTS = {
   USER_JOINED: 'userJoined',
   USER_LEFT: 'userLeft',
   ERROR: 'error',
+  WARNING_UPDATE: 'warningUpdate',
 } as const;
 
 class SocketService {

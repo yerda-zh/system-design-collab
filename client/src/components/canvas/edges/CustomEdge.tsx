@@ -3,7 +3,7 @@ import type { EdgeProps } from '@xyflow/react';
 import type { EdgeType } from '../../../types';
 import { EDGE_CONFIG } from '../../../types';
 
-type Props = EdgeProps & { data?: { edgeType?: EdgeType; pending?: boolean } };
+type Props = EdgeProps & { data?: { edgeType?: EdgeType } };
 
 export default function CustomEdge({
   id,
@@ -15,6 +15,10 @@ export default function CustomEdge({
   targetPosition,
   data,
 }: Props) {
+  const rawType = data?.edgeType;
+  const edgeType: EdgeType = rawType && rawType in EDGE_CONFIG ? rawType : 'http';
+  const config = EDGE_CONFIG[edgeType];
+
   const [edgePath, labelX, labelY] = getBezierPath({
     sourceX,
     sourceY,
@@ -24,23 +28,37 @@ export default function CustomEdge({
     targetPosition,
   });
 
-  if (data?.pending) {
-    return (
-      <BaseEdge
-        id={id}
-        path={edgePath}
-        style={{ ...styles.path, stroke: '#94a3b8', strokeDasharray: '6 3' }}
-      />
-    );
-  }
-
-  const rawType = data?.edgeType;
-  const edgeType: EdgeType = rawType && rawType in EDGE_CONFIG ? rawType : 'http';
-  const config = EDGE_CONFIG[edgeType];
+  const markerId = `arrow-${id}`;
 
   return (
     <>
-      <BaseEdge id={id} path={edgePath} style={{ ...styles.path, stroke: config.color }} />
+      {/* Define the arrowhead marker for this edge */}
+      <defs>
+        <marker
+          id={markerId}
+          markerWidth="10"
+          markerHeight="7"
+          refX="10"
+          refY="3.5"
+          orient="auto"
+        >
+          <polygon
+            points="0 0, 10 3.5, 0 7"
+            fill={config.color}
+          />
+        </marker>
+      </defs>
+
+      <BaseEdge
+        id={id}
+        path={edgePath}
+        style={{
+          stroke: config.color,
+          strokeWidth: 2,
+          markerEnd: `url(#${markerId})`,
+        }}
+      />
+
       <EdgeLabelRenderer>
         <div
           className="nodrag nopan"
@@ -58,9 +76,6 @@ export default function CustomEdge({
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  path: {
-    strokeWidth: 2,
-  },
   label: {
     position: 'absolute',
     pointerEvents: 'all',

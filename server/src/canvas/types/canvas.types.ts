@@ -20,14 +20,16 @@ export interface CanvasNode {
   data: NodeData;
 }
 
+export interface EdgeData {
+  edgeType?: string;
+}
+
 export interface CanvasEdge {
   id: string;
   source: string;
   target: string;
-  sourceHandle?: string;
-  targetHandle?: string;
   label?: string;
-  data?: { edgeType: string };
+  data?: EdgeData;
 }
 
 export interface CanvasStateData {

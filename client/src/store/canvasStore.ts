@@ -13,6 +13,7 @@ interface CanvasState {
   revision: number;
   isDirty: boolean; // true if there are unsaved changes
   isApplyingRemote: boolean;  // true when applying a broadcast from another user
+  highlightedNodeId: string | null;
 
   setNodes: (nodes: Node<NodeData>[]) => void;
   setEdges: (edges: Edge[]) => void;
@@ -28,6 +29,7 @@ interface CanvasState {
   setApplyingRemote: (value: boolean) => void;
   removeEdge: (edgeId: string) => void;
   removeNode: (nodeId: string) => void;
+  setHighlightedNodeId: (id: string | null) => void;
 }
 
 export const useCanvasStore = create<CanvasState>((set) => ({
@@ -36,6 +38,7 @@ export const useCanvasStore = create<CanvasState>((set) => ({
   revision: 0,
   isDirty: false,
   isApplyingRemote: false,
+  highlightedNodeId: null as string | null,
 
   setNodes: (nodes) => set({ nodes }),
   setEdges: (edges) => set({ edges }),
@@ -115,4 +118,5 @@ export const useCanvasStore = create<CanvasState>((set) => ({
       ),
       isDirty: true,
     })),
+  setHighlightedNodeId: (id: string | null) => set({ highlightedNodeId: id }),
 }));

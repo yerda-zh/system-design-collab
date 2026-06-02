@@ -5,6 +5,7 @@ import { AuthModule } from './auth/auth.module';
 import { RoomsModule } from './rooms/rooms.module';
 import { CanvasStateModule } from './canvas/canvas-state.module';
 import { RedisModule } from './redis/redis.module';
+import { WarningsModule } from './warnings/warnings.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { RedisModule } from './redis/redis.module';
     RedisModule,
     AuthModule,
     RoomsModule,
+    WarningsModule,
     CanvasStateModule,
   ],
 })

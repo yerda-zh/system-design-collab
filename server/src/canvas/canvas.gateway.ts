@@ -14,6 +14,7 @@ import { ConfigService } from '@nestjs/config';
 import { RedisService } from '../redis/redis.service';
 import { CanvasSyncService } from './canvas-sync.service';
 import { RoomsService } from '../rooms/rooms.service';
+import { WarningEngineService } from '../warnings/warning-engine.service';
 import { WS_EVENTS } from './types/events';
 import type { CanvasOperation } from './types/operations';
 import type { CursorPosition } from './types/events';
@@ -26,6 +27,10 @@ interface SocketData {
 // Store connected socket metadata in memory
 // Map<socketId, { userId, displayName, roomId }>
 const socketMeta = new Map<string, { userId: string; displayName: string; roomId: string }>();
+
+// Debounce timers per room — warning analysis runs 500ms after
+// the last operation in a room, not after every single operation
+const warningDebounceTimers = new Map<string, NodeJS.Timeout>();
 
 @WebSocketGateway({
   cors: {
@@ -45,6 +50,7 @@ export class CanvasGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly redisService: RedisService,
     private readonly canvasSyncService: CanvasSyncService,
     private readonly roomsService: RoomsService,
+    private readonly warningEngineService: WarningEngineService,
   ) {}
 
   /**
@@ -156,6 +162,11 @@ export class CanvasGateway implements OnGatewayConnection, OnGatewayDisconnect {
       activeUsers,
     });
 
+    // Run warning analysis immediately so the joining user
+    // sees current warnings without having to make a change first
+    const warnings = this.warningEngineService.analyze(state);
+    socket.emit(WS_EVENTS.WARNING_UPDATE, { warnings });
+
     // Notify everyone else in the room that a new user joined
     socket.to(roomId).emit(WS_EVENTS.USER_JOINED, { userId, displayName });
 
@@ -193,6 +204,10 @@ export class CanvasGateway implements OnGatewayConnection, OnGatewayDisconnect {
         ...operation,
         serverRevision: result.serverRevision,
       });
+
+      // Schedule warning analysis after 500ms debounce
+      // Cancels any previously scheduled analysis for this room
+      this.scheduleWarningAnalysis(operation.roomId);
     }
   }
 
@@ -214,6 +229,38 @@ export class CanvasGateway implements OnGatewayConnection, OnGatewayDisconnect {
       x: cursor.x,
       y: cursor.y,
     });
+  }
+
+  /**
+   * Schedules warning analysis for a room with a 500ms debounce.
+   * If called again within 500ms, the previous timer is cancelled
+   * and a new one starts. This prevents running analysis on every
+   * keystroke during rapid editing.
+   */
+  private scheduleWarningAnalysis(roomId: string): void {
+    const existing = warningDebounceTimers.get(roomId);
+    if (existing) clearTimeout(existing);
+
+    const timer = setTimeout(() => {
+      void this.runWarningAnalysis(roomId);
+      warningDebounceTimers.delete(roomId);
+    }, 500);
+
+    warningDebounceTimers.set(roomId, timer);
+  }
+
+  private async runWarningAnalysis(roomId: string): Promise<void> {
+    const state = await this.redisService.getCanvasState(roomId);
+    if (!state) return;
+
+    const warnings = this.warningEngineService.analyze(state);
+
+    // Broadcast full warning list to all clients in the room
+    this.server.to(roomId).emit(WS_EVENTS.WARNING_UPDATE, { warnings });
+
+    this.logger.debug(
+      `Warning analysis for room ${roomId}: ${warnings.length} warnings`,
+    );
   }
 
   private extractToken(socket: Socket): string | null {
