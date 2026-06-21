@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { getInviteToken, regenerateInvite } from '../../api/rooms';
+import { isAxiosError } from 'axios';
+import { getInviteToken, getInviteTokenPublic, regenerateInvite } from '../../api/rooms';
 
 interface SharePopupProps {
   roomId: string;
@@ -23,8 +24,17 @@ export default function SharePopup({ roomId, isOwner, onClose }: SharePopupProps
       try {
         const data = await getInviteToken(roomId);
         setInviteToken(data.inviteToken);
-      } catch {
-        setError('Could not load invite link');
+      } catch (err) {
+        if (isAxiosError(err) && err.response?.status === 403) {
+          try {
+            const data = await getInviteTokenPublic(roomId);
+            setInviteToken(data.inviteToken);
+          } catch {
+            setError('Could not load invite link');
+          }
+        } else {
+          setError('Could not load invite link');
+        }
       }
     };
     fetchToken();

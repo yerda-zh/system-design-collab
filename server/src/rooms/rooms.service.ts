@@ -141,4 +141,33 @@ export class RoomsService {
 
         return { inviteToken: room.inviteToken, roomName: room.name };
     }
+
+    async getInviteTokenPublic(roomId: string, userId: string) {
+        const member = await this.roomMembersRepository.findOne({
+            where: { roomId, userId },
+            relations: ['room'],
+        });
+
+        if (!member) {
+            throw new ForbiddenException('You do not have access to this room');
+        }
+
+        return { inviteToken: member.room.inviteToken, roomName: member.room.name };
+    }
+
+    async updateRoomName(roomId: string, userId: string, name: string) {
+        const room = await this.roomsRepository.findOne({ where: { id: roomId } });
+
+        if (!room) {
+            throw new NotFoundException('Room not found');
+        }
+
+        if (room.ownerId !== userId) {
+            throw new ForbiddenException('Only the owner can rename the room');
+        }
+
+        room.name = name;
+        await this.roomsRepository.save(room);
+        return room;
+    }
 }

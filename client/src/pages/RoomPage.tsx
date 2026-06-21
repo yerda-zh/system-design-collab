@@ -7,7 +7,7 @@ import SharePopup from '../components/room/SharePopup';
 import SnapshotsPanel from '../components/room/SnapshotsPanel';
 import CommentPanel from '../components/room/CommentPanel';
 import { saveCanvas } from '../api/canvas';
-import { getRoom } from '../api/rooms';
+import { getRoom, updateRoomName } from '../api/rooms';
 import { useCanvasStore } from '../store/canvasStore';
 import { useCollaborationStore } from '../store/collaborationStore';
 import { useCollaboration } from '../hooks/useCollaboration';
@@ -29,6 +29,9 @@ export default function RoomPage() {
   const [showSnapshots, setShowSnapshots] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
   const [roomName, setRoomName] = useState('');
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [nameInput, setNameInput] = useState('');
+  const [isHoveringName, setIsHoveringName] = useState(false);
   const [activeCommentTarget, setActiveCommentTarget] = useState<{
     targetId: string;
     targetType: 'node' | 'edge';
@@ -74,6 +77,22 @@ export default function RoomPage() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleSave]);
 
+  const commitNameEdit = useCallback(async () => {
+    const trimmed = nameInput.trim();
+    if (!trimmed || trimmed === roomName) {
+      setIsEditingName(false);
+      return;
+    }
+    try {
+      const updated = await updateRoomName(roomId!, trimmed);
+      setRoomName(updated.name);
+    } catch {
+      setError('Failed to rename canvas');
+      setTimeout(() => setError(''), 3000);
+    }
+    setIsEditingName(false);
+  }, [nameInput, roomName, roomId]);
+
   const handleAddNode = (nodeType: NodeType) => {
     window.__addNode?.(nodeType);
   };
@@ -113,7 +132,38 @@ export default function RoomPage() {
         </button>
 
         <div style={styles.center}>
-          <span style={styles.roomName}>{roomName || roomId}</span>
+          {isOwner && isEditingName ? (
+            <input
+              autoFocus
+              value={nameInput}
+              onChange={(e) => setNameInput(e.target.value)}
+              onBlur={commitNameEdit}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') commitNameEdit();
+                if (e.key === 'Escape') setIsEditingName(false);
+              }}
+              style={styles.roomNameInput}
+            />
+          ) : (
+            <div
+              style={styles.roomNameRow}
+              onMouseEnter={() => isOwner && setIsHoveringName(true)}
+              onMouseLeave={() => setIsHoveringName(false)}
+              onClick={() => {
+                if (isOwner) {
+                  setIsEditingName(true);
+                  setNameInput(roomName);
+                }
+              }}
+            >
+              <span style={{ ...styles.roomName, cursor: isOwner ? 'pointer' : 'default' }}>
+                {roomName || roomId}
+              </span>
+              {isOwner && isHoveringName && (
+                <span style={styles.pencil}>✏️</span>
+              )}
+            </div>
+          )}
         </div>
 
         <div style={styles.actions}>
@@ -209,7 +259,18 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#2563eb',
   },
   center: { position: 'absolute', left: '50%', transform: 'translateX(-50%)' },
+  roomNameRow: { display: 'flex', alignItems: 'center', gap: '0.3rem' },
   roomName: { fontWeight: 600, fontSize: '1rem' },
+  roomNameInput: {
+    fontWeight: 600,
+    fontSize: '1rem',
+    border: 'none',
+    outline: '1px solid #2563eb',
+    borderRadius: '4px',
+    padding: '0 4px',
+    background: 'white',
+  },
+  pencil: { fontSize: '0.8rem', cursor: 'pointer' },
   actions: { display: 'flex', alignItems: 'center', gap: '0.75rem' },
   unsaved: { fontSize: '0.85rem', color: '#9ca3af' },
   error: { fontSize: '0.85rem', color: 'red' },

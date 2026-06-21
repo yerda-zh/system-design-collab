@@ -37,3 +37,15 @@ export const getRoom = async (roomId: string): Promise<Room> => {
   const res = await api.get(`/rooms/${roomId}`);
   return res.data;
 };
+
+export const getInviteTokenPublic = async (
+  roomId: string,
+): Promise<{ inviteToken: string; roomName: string }> => {
+  const res = await api.get(`/rooms/${roomId}/invite-public`);
+  return res.data;
+};
+
+export const updateRoomName = async (roomId: string, name: string): Promise<Room> => {
+  const res = await api.patch(`/rooms/${roomId}/name`, { name });
+  return res.data;
+};

@@ -1,19 +1,11 @@
+import { useState } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { useShallow } from 'zustand/react/shallow';
-import type { NodeData, NodeType } from '../../../types';
+import type { NodeData } from '../../../types';
 import { useWarningStore } from '../../../store/warningStore';
 import { useCommentStore } from '../../../store/commentStore';
 import { useCanvasStore } from '../../../store/canvasStore';
-
-const NODE_CONFIG: Record<NodeType, { color: string; icon: string }> = {
-  database:     { color: '#2563eb', icon: '🗄️' },
-  cache:        { color: '#16a34a', icon: '⚡' },
-  queue:        { color: '#d97706', icon: '📨' },
-  service:      { color: '#7c3aed', icon: '⚙️' },
-  loadBalancer: { color: '#dc2626', icon: '⚖️' },
-  apiGateway:   { color: '#0891b2', icon: '🔀' },
-  cdn:          { color: '#65a30d', icon: '🌐' },
-};
+import { NODE_CONFIG } from '../../../constants/nodeConfig';
 
 interface BaseNodeProps {
   id: string;
@@ -32,17 +24,37 @@ export default function BaseNode({ id, data, selected }: BaseNodeProps) {
 
   const hasHighSeverity = warnings.some((w) => w.severity === 'high');
   const hasWarnings = warnings.length > 0;
-  const commentCount = useCommentStore(
+  const topLevelComments = useCommentStore(
     useShallow((state) =>
-      state.comments.filter((c) => c.targetId === id && c.parentId === null).length,
+      state.comments.filter((c) => c.targetId === id && c.parentId === null),
     ),
   );
 
   const highlightedNodeId = useCanvasStore((state) => state.highlightedNodeId);
   const isHighlighted = highlightedNodeId === id;
 
+  const [isEditing, setIsEditing] = useState(false);
+  const [labelInput, setLabelInput] = useState(data.label);
+  const [isTooltipVisible, setIsTooltipVisible] = useState(false);
+  const [isCommentTooltipVisible, setIsCommentTooltipVisible] = useState(false);
+
+  const commitEdit = () => {
+    const trimmed = labelInput.trim();
+    if (!trimmed || trimmed === data.label) {
+      setIsEditing(false);
+      return;
+    }
+    window.__updateNodeLabel?.(id, trimmed);
+    setIsEditing(false);
+  };
+
   return (
     <div
+      onDoubleClick={() => {
+        setIsEditing(true);
+        setLabelInput(data.label);
+      }}
+      onKeyDown={isEditing ? (e) => e.stopPropagation() : undefined}
       style={{
         ...styles.node,
         borderColor: hasHighSeverity
@@ -81,7 +93,26 @@ export default function BaseNode({ id, data, selected }: BaseNodeProps) {
       </div>
 
       <div style={styles.body}>
-        <span style={styles.label}>{data.label}</span>
+        {isEditing ? (
+          <input
+            autoFocus
+            value={labelInput}
+            onChange={(e) => setLabelInput(e.target.value)}
+            onBlur={commitEdit}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') commitEdit();
+              if (e.key === 'Escape') {
+                setLabelInput(data.label);
+                setIsEditing(false);
+              }
+              e.stopPropagation();
+            }}
+            onClick={(e) => e.stopPropagation()}
+            style={styles.labelInput}
+          />
+        ) : (
+          <span style={styles.label}>{data.label}</span>
+        )}
       </div>
 
       {hasWarnings && (
@@ -90,14 +121,44 @@ export default function BaseNode({ id, data, selected }: BaseNodeProps) {
             ...styles.badge,
             backgroundColor: hasHighSeverity ? '#dc2626' : '#d97706',
           }}
+          onMouseEnter={() => setIsTooltipVisible(true)}
+          onMouseLeave={() => setIsTooltipVisible(false)}
         >
           {warnings.length}
         </div>
       )}
 
-      {commentCount > 0 && (
-        <div style={styles.commentBadge}>
-          {commentCount}
+      {isTooltipVisible && hasWarnings && (
+        <div style={styles.tooltip}>
+          {warnings.map((w) => (
+            <div key={w.id} style={styles.tooltipRow}>
+              <span style={{ color: w.severity === 'high' ? '#dc2626' : '#d97706' }}>●</span>
+              <span>{w.message}</span>
+            </div>
+          ))}
+          <div style={styles.tooltipArrow} />
+        </div>
+      )}
+
+      {topLevelComments.length > 0 && (
+        <div
+          style={styles.commentBadge}
+          onMouseEnter={() => setIsCommentTooltipVisible(true)}
+          onMouseLeave={() => setIsCommentTooltipVisible(false)}
+        >
+          {topLevelComments.length}
+        </div>
+      )}
+
+      {isCommentTooltipVisible && topLevelComments.length > 0 && (
+        <div style={styles.commentTooltip}>
+          {topLevelComments.map((c) => (
+            <div key={c.id} style={styles.tooltipRow}>
+              <span style={{ color: '#2563eb' }}>●</span>
+              <span><strong>{c.authorName}:</strong> {c.body}</span>
+            </div>
+          ))}
+          <div style={styles.commentTooltipArrow} />
         </div>
       )}
     </div>
@@ -130,8 +191,18 @@ const styles: Record<string, React.CSSProperties> = {
     textTransform: 'uppercase',
     letterSpacing: '0.05em',
   },
-  body: { padding: '0.5rem 0.6rem' },
+  body: { padding: '0.5rem 0.6rem', cursor: 'text' },
   label: { fontSize: '0.9rem', fontWeight: 500, color: '#1f2937' },
+  labelInput: {
+    width: '100%',
+    border: 'none',
+    outline: 'none',
+    background: 'transparent',
+    fontSize: '0.9rem',
+    fontWeight: 500,
+    color: '#1f2937',
+    padding: 0,
+  },
   handle: {
     width: '10px',
     height: '10px',
@@ -153,6 +224,39 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 700,
     border: '2px solid white',
     zIndex: 10,
+    cursor: 'default',
+  },
+  tooltip: {
+    position: 'absolute',
+    bottom: '100%',
+    right: 0,
+    marginBottom: '6px',
+    backgroundColor: '#1f2937',
+    color: 'white',
+    borderRadius: '6px',
+    padding: '0.5rem 0.75rem',
+    width: '220px',
+    zIndex: 1000,
+    boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+    pointerEvents: 'none',
+  },
+  tooltipRow: {
+    display: 'flex',
+    gap: '0.4rem',
+    alignItems: 'flex-start',
+    fontSize: '0.72rem',
+    lineHeight: 1.5,
+    marginBottom: '0.25rem',
+  },
+  tooltipArrow: {
+    position: 'absolute',
+    bottom: '-4px',
+    right: '8px',
+    width: 0,
+    height: 0,
+    borderLeft: '4px solid transparent',
+    borderRight: '4px solid transparent',
+    borderTop: '4px solid #1f2937',
   },
   commentBadge: {
     position: 'absolute',
@@ -170,5 +274,30 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 700,
     border: '2px solid white',
     zIndex: 10,
+    cursor: 'default',
+  },
+  commentTooltip: {
+    position: 'absolute',
+    bottom: '100%',
+    left: 0,
+    marginBottom: '6px',
+    backgroundColor: '#1f2937',
+    color: 'white',
+    borderRadius: '6px',
+    padding: '0.5rem 0.75rem',
+    width: '220px',
+    zIndex: 1000,
+    boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+    pointerEvents: 'none',
+  },
+  commentTooltipArrow: {
+    position: 'absolute',
+    bottom: '-4px',
+    left: '8px',
+    width: 0,
+    height: 0,
+    borderLeft: '4px solid transparent',
+    borderRight: '4px solid transparent',
+    borderTop: '4px solid #1f2937',
   },
 };

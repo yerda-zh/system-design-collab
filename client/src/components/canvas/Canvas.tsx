@@ -20,6 +20,7 @@ import { nodeTypes } from './nodes';
 import { edgeTypes } from './edges';
 import { useCanvasStore } from '../../store/canvasStore';
 import type { NodeType, NodeData, EdgeType } from '../../types';
+import { NODE_CONFIG } from '../../constants/nodeConfig';
 import ContextMenu from './ContextMenu';
 import CursorOverlay from './CursorOverlay';
 import EdgeTypePopup from './EdgeTypePopup';
@@ -61,6 +62,22 @@ function CanvasInner({ onEmitOperation, onCursorMove, onOpenComments }: CanvasIn
 
   const mousePositionRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
+  const nodeColor = useCallback((node: Node): string => {
+    if (node.type && node.type in NODE_CONFIG) {
+      return NODE_CONFIG[node.type as NodeType].color;
+    }
+    return '#94a3b8';
+  }, []);
+
+  const handleUpdateNodeLabel = useCallback(
+    (nodeId: string, label: string) => {
+      const { nodes, setNodes } = useCanvasStore.getState();
+      setNodes(nodes.map((n) => (n.id === nodeId ? { ...n, data: { ...n.data, label } } : n)));
+      onEmitOperation({ type: 'updateNode', nodeId, label });
+    },
+    [onEmitOperation],
+  );
+
   // Registers add node handler for sidebar clicks
   const handleAddNode = useCallback(
     (nodeType: NodeType) => {
@@ -87,10 +104,12 @@ function CanvasInner({ onEmitOperation, onCursorMove, onOpenComments }: CanvasIn
 
   useEffect(() => {
     window.__addNode = handleAddNode;
+    window.__updateNodeLabel = handleUpdateNodeLabel;
     return () => {
       window.__addNode = undefined;
+      window.__updateNodeLabel = undefined;
     };
-  }, [handleAddNode]);
+  }, [handleAddNode, handleUpdateNodeLabel]);
 
   // Pan and zoom to the highlighted node when a warning is clicked
   useEffect(() => {
@@ -291,7 +310,7 @@ function CanvasInner({ onEmitOperation, onCursorMove, onOpenComments }: CanvasIn
       >
         <Background />
         <Controls />
-        <MiniMap />
+        <MiniMap nodeColor={nodeColor} nodeBorderRadius={4} />
       </ReactFlow>
 
       <CursorOverlay />
