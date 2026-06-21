@@ -5,6 +5,7 @@ import ComponentLibrary from '../components/sidebar/ComponentLibrary';
 import ActiveUsers from '../components/collaboration/ActiveUsers';
 import SharePopup from '../components/room/SharePopup';
 import SnapshotsPanel from '../components/room/SnapshotsPanel';
+import CommentPanel from '../components/room/CommentPanel';
 import { saveCanvas } from '../api/canvas';
 import { getRoom } from '../api/rooms';
 import { useCanvasStore } from '../store/canvasStore';
@@ -28,6 +29,10 @@ export default function RoomPage() {
   const [showSnapshots, setShowSnapshots] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
   const [roomName, setRoomName] = useState('');
+  const [activeCommentTarget, setActiveCommentTarget] = useState<{
+    targetId: string;
+    targetType: 'node' | 'edge';
+  } | null>(null);
 
   // Load room details to determine if current user is the owner
   useEffect(() => {
@@ -77,6 +82,13 @@ export default function RoomPage() {
     useCanvasStore.getState().setHighlightedNodeId(nodeId);
     setTimeout(() => useCanvasStore.getState().setHighlightedNodeId(null), 2000);
   }, []);
+
+  const handleOpenComments = useCallback(
+    (targetId: string, targetType: 'node' | 'edge') => {
+      setActiveCommentTarget({ targetId, targetType });
+    },
+    [],
+  );
 
   const handleEmitOperation = useCallback(
     (op: object) => {
@@ -139,6 +151,7 @@ export default function RoomPage() {
           <Canvas
             onEmitOperation={handleEmitOperation}
             onCursorMove={emitCursor}
+            onOpenComments={handleOpenComments}
           />
         </div>
       </div>
@@ -155,6 +168,15 @@ export default function RoomPage() {
         <SnapshotsPanel
           roomId={roomId}
           onClose={() => setShowSnapshots(false)}
+        />
+      )}
+
+      {activeCommentTarget && roomId && (
+        <CommentPanel
+          targetId={activeCommentTarget.targetId}
+          targetType={activeCommentTarget.targetType}
+          roomId={roomId}
+          onClose={() => setActiveCommentTarget(null)}
         />
       )}
     </div>

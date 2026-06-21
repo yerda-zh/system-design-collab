@@ -34,9 +34,10 @@ interface ContextMenuState {
 interface CanvasInnerProps {
   onEmitOperation: (op: object) => void;
   onCursorMove: (x: number, y: number) => void;
+  onOpenComments: (targetId: string, targetType: 'node' | 'edge') => void;
 }
 
-function CanvasInner({ onEmitOperation, onCursorMove }: CanvasInnerProps) {
+function CanvasInner({ onEmitOperation, onCursorMove, onOpenComments }: CanvasInnerProps) {
   const { screenToFlowPosition, fitView } = useReactFlow();
 
   const {
@@ -301,6 +302,10 @@ function CanvasInner({ onEmitOperation, onCursorMove }: CanvasInnerProps) {
           y={contextMenu.y}
           onDelete={handleContextMenuDelete}
           onClose={() => setContextMenu(null)}
+          onAddComment={() => {
+            onOpenComments(contextMenu.targetId, contextMenu.targetType);
+            setContextMenu(null);
+          }}
         />
       )}
 
@@ -322,14 +327,16 @@ function CanvasInner({ onEmitOperation, onCursorMove }: CanvasInnerProps) {
 interface CanvasProps {
   onEmitOperation: (op: object) => void;
   onCursorMove: (x: number, y: number) => void;
+  onOpenComments: (targetId: string, targetType: 'node' | 'edge') => void;
 }
 
-export default function Canvas({ onEmitOperation, onCursorMove }: CanvasProps) {
+export default function Canvas({ onEmitOperation, onCursorMove, onOpenComments }: CanvasProps) {
   return (
     <ReactFlowProvider>
       <CanvasInner
         onEmitOperation={onEmitOperation}
         onCursorMove={onCursorMove}
+        onOpenComments={onOpenComments}
       />
     </ReactFlowProvider>
   );

@@ -49,3 +49,15 @@ export interface Snapshot {
   createdBy: string;
   createdAt: string;
 }
+
+export interface Comment {
+  id: string;
+  roomId: string;
+  targetId: string;
+  targetType: 'node' | 'edge';
+  body: string;
+  authorId: string;
+  authorName: string;
+  parentId: string | null;
+  createdAt: string;
+}

@@ -19,6 +19,8 @@ export const WS_EVENTS = {
   WARNING_UPDATE: 'warningUpdate',
   SNAPSHOT_CREATED: 'snapshotCreated',
   SNAPSHOT_DELETED: 'snapshotDeleted',
+  COMMENT_CREATED: 'commentCreated',
+  COMMENT_DELETED: 'commentDeleted',
 } as const;
 
 class SocketService {

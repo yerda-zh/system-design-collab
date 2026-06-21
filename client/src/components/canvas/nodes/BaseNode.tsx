@@ -2,6 +2,7 @@ import { Handle, Position } from '@xyflow/react';
 import { useShallow } from 'zustand/react/shallow';
 import type { NodeData, NodeType } from '../../../types';
 import { useWarningStore } from '../../../store/warningStore';
+import { useCommentStore } from '../../../store/commentStore';
 import { useCanvasStore } from '../../../store/canvasStore';
 
 const NODE_CONFIG: Record<NodeType, { color: string; icon: string }> = {
@@ -31,6 +32,12 @@ export default function BaseNode({ id, data, selected }: BaseNodeProps) {
 
   const hasHighSeverity = warnings.some((w) => w.severity === 'high');
   const hasWarnings = warnings.length > 0;
+  const commentCount = useCommentStore(
+    useShallow((state) =>
+      state.comments.filter((c) => c.targetId === id && c.parentId === null).length,
+    ),
+  );
+
   const highlightedNodeId = useCanvasStore((state) => state.highlightedNodeId);
   const isHighlighted = highlightedNodeId === id;
 
@@ -87,6 +94,12 @@ export default function BaseNode({ id, data, selected }: BaseNodeProps) {
           {warnings.length}
         </div>
       )}
+
+      {commentCount > 0 && (
+        <div style={styles.commentBadge}>
+          {commentCount}
+        </div>
+      )}
     </div>
   );
 }
@@ -135,6 +148,23 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+    color: 'white',
+    fontSize: '0.7rem',
+    fontWeight: 700,
+    border: '2px solid white',
+    zIndex: 10,
+  },
+  commentBadge: {
+    position: 'absolute',
+    top: '-8px',
+    left: '-8px',
+    width: '20px',
+    height: '20px',
+    borderRadius: '50%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#2563eb',
     color: 'white',
     fontSize: '0.7rem',
     fontWeight: 700,

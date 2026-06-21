@@ -318,6 +318,14 @@ export class CanvasGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.server.to(roomId).emit(WS_EVENTS.SNAPSHOT_DELETED, { snapshotId });
   }
 
+  broadcastCommentCreated(roomId: string, comment: unknown): void {
+    this.server.to(roomId).emit(WS_EVENTS.COMMENT_CREATED, comment);
+  }
+
+  broadcastCommentDeleted(roomId: string, commentId: string): void {
+    this.server.to(roomId).emit(WS_EVENTS.COMMENT_DELETED, { commentId });
+  }
+
   private extractToken(socket: Socket): string | null {
     // Token can come from auth handshake or query param
     const authToken = socket.handshake.auth?.token as string | undefined;
