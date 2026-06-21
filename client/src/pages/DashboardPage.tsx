@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getMyRooms, getSharedRooms, createRoom, joinRoom } from '../api/rooms';
 import { useAuthStore } from '../store/authStore';
+import SharePopup from '../components/room/SharePopup';
 import type { Room } from '../types';
 
 export default function DashboardPage() {
@@ -13,6 +14,7 @@ export default function DashboardPage() {
   const [newRoomName, setNewRoomName] = useState('');
   const [inviteInput, setInviteInput] = useState('');
   const [error, setError] = useState('');
+  const [sharingRoomId, setSharingRoomId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchRooms = async () => {
@@ -117,6 +119,16 @@ export default function DashboardPage() {
                   style={styles.roomCard}
                   onClick={() => navigate(`/room/${room.id}`)}
                 >
+                  <button
+                    style={styles.shareIconBtn}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSharingRoomId(room.id);
+                    }}
+                    title="Share"
+                  >
+                    🔗
+                  </button>
                   <p style={styles.roomName}>{room.name}</p>
                   <p style={styles.roomDate}>
                     {new Date(room.createdAt).toLocaleDateString()}
@@ -140,6 +152,16 @@ export default function DashboardPage() {
                   style={styles.roomCard}
                   onClick={() => navigate(`/room/${room.id}`)}
                 >
+                  <button
+                    style={styles.shareIconBtn}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSharingRoomId(room.id);
+                    }}
+                    title="Share"
+                  >
+                    🔗
+                  </button>
                   <p style={styles.roomName}>{room.name}</p>
                   <p style={styles.roomDate}>
                     {new Date(room.createdAt).toLocaleDateString()}
@@ -150,6 +172,14 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
+
+      {sharingRoomId && (
+        <SharePopup
+          roomId={sharingRoomId}
+          isOwner={myRooms.some((r) => r.id === sharingRoomId)}
+          onClose={() => setSharingRoomId(null)}
+        />
+      )}
     </div>
   );
 }
@@ -200,6 +230,19 @@ const styles: Record<string, React.CSSProperties> = {
     boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
     cursor: 'pointer',
     transition: 'box-shadow 0.2s',
+    position: 'relative',
+  },
+  shareIconBtn: {
+    position: 'absolute',
+    top: '0.5rem',
+    right: '0.5rem',
+    background: 'none',
+    border: 'none',
+    cursor: 'pointer',
+    fontSize: '0.9rem',
+    padding: '0.2rem',
+    lineHeight: 1,
+    borderRadius: '4px',
   },
   roomName: { margin: '0 0 0.5rem', fontWeight: 600 },
   roomDate: { margin: 0, fontSize: '0.85rem', color: '#888' },

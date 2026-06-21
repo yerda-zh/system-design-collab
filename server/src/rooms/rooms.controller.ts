@@ -11,6 +11,7 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import { RoomsService } from './rooms.service';
 import { CreateRoomDto } from './dto/create-room.dto';
+import { UpdateRoomNameDto } from './dto/update-room-name.dto';
 
 interface AuthenticatedRequest {
   user: {
@@ -67,5 +68,21 @@ export class RoomsController {
     @Get(':id/invite')
     getInviteToken(@Param('id') id: string, @Request() req: AuthenticatedRequest) {
         return this.roomsService.getInviteToken(id, req.user.id);
+    }
+
+    // GET /rooms/:id/invite-public — get invite token (any room member)
+    @Get(':id/invite-public')
+    getInviteTokenPublic(@Param('id') id: string, @Request() req: AuthenticatedRequest) {
+        return this.roomsService.getInviteTokenPublic(id, req.user.id);
+    }
+
+    // PATCH /rooms/:id/name — rename room (owner only)
+    @Patch(':id/name')
+    updateRoomName(
+        @Param('id') id: string,
+        @Body() dto: UpdateRoomNameDto,
+        @Request() req: AuthenticatedRequest,
+    ) {
+        return this.roomsService.updateRoomName(id, req.user.id, dto.name);
     }
 }
