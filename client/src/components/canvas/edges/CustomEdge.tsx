@@ -1,7 +1,9 @@
 import { getBezierPath, BaseEdge, EdgeLabelRenderer } from '@xyflow/react';
 import type { EdgeProps } from '@xyflow/react';
+import { useShallow } from 'zustand/react/shallow';
 import type { EdgeType } from '../../../types';
 import { EDGE_CONFIG } from '../../../types';
+import { useCommentStore } from '../../../store/commentStore';
 
 type Props = EdgeProps & { data?: { edgeType?: EdgeType } };
 
@@ -18,6 +20,12 @@ export default function CustomEdge({
   const rawType = data?.edgeType;
   const edgeType: EdgeType = rawType && rawType in EDGE_CONFIG ? rawType : 'http';
   const config = EDGE_CONFIG[edgeType];
+
+  const commentCount = useCommentStore(
+    useShallow((state) =>
+      state.comments.filter((c) => c.targetId === id && c.parentId === null).length,
+    ),
+  );
 
   const [edgePath, labelX, labelY] = getBezierPath({
     sourceX,
@@ -70,6 +78,17 @@ export default function CustomEdge({
         >
           {config.label}
         </div>
+        {commentCount > 0 && (
+          <div
+            className="nodrag nopan"
+            style={{
+              ...styles.commentBadge,
+              transform: `translate(-50%, -50%) translate(${labelX}px,${labelY - 20}px)`,
+            }}
+          >
+            {commentCount}
+          </div>
+        )}
       </EdgeLabelRenderer>
     </>
   );
@@ -86,5 +105,20 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: '4px',
     letterSpacing: '0.04em',
     textTransform: 'uppercase',
+  },
+  commentBadge: {
+    position: 'absolute',
+    pointerEvents: 'all',
+    width: '16px',
+    height: '16px',
+    borderRadius: '50%',
+    backgroundColor: '#2563eb',
+    color: 'white',
+    fontSize: '10px',
+    fontWeight: 700,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    border: '2px solid white',
   },
 };

@@ -13,7 +13,10 @@ import type {
 } from '../types/events';
 import { useNavigate } from 'react-router-dom';
 import { useWarningStore } from '../store/warningStore';
+import { useCommentStore } from '../store/commentStore';
+import { getComments } from '../api/comments';
 import type { Warning } from '../types/warnings';
+import type { Comment } from '../types';
 
 export function useCollaboration(roomId: string) {
   const { user, logout } = useAuthStore();
@@ -77,6 +80,17 @@ export function useCollaboration(roomId: string) {
       serverRevision.current = payload.revision;
       setActiveUsers(payload.activeUsers);
       setJoined(true);
+      getComments(roomId).then((comments) => {
+        useCommentStore.getState().setComments(comments);
+      });
+    };
+
+    const onCommentCreated = (comment: Comment) => {
+      useCommentStore.getState().addComment(comment);
+    };
+
+    const onCommentDeleted = (data: { commentId: string }) => {
+      useCommentStore.getState().removeComment(data.commentId);
     };
 
      const onWarningUpdate = (data: { warnings: Warning[] }) => {
@@ -146,6 +160,15 @@ export function useCollaboration(roomId: string) {
       }, 0);
     };
 
+    // Handler: another user restored a snapshot — replace full canvas state
+    const onCanvasRestored = (payload: { nodes: object[]; edges: object[]; revision: number }) => {
+      setNodes(payload.nodes as Node<NodeData>[]);
+      setEdges(payload.edges.map((e) => ({ ...e, type: 'custom' })) as Edge[]);
+      setRevision(payload.revision);
+      serverRevision.current = payload.revision;
+      useCanvasStore.getState().markSaved();
+    };
+
     // Handler: server acknowledges our operation
     const onOperationAck = (payload: OperationAckPayload) => {
       if (payload.success) {
@@ -180,12 +203,15 @@ export function useCollaboration(roomId: string) {
 
     // Register all event handlers
     socketService.on(WS_EVENTS.ROOM_STATE, onRoomState as (...args: unknown[]) => void);
+    socketService.on(WS_EVENTS.CANVAS_RESTORED, onCanvasRestored as (...args: unknown[]) => void);
     socketService.on(WS_EVENTS.OPERATION_BROADCAST, onOperationBroadcast as (...args: unknown[]) => void);
     socketService.on(WS_EVENTS.OPERATION_ACK, onOperationAck as (...args: unknown[]) => void);
     socketService.on(WS_EVENTS.CURSOR_BROADCAST, onCursorBroadcast as (...args: unknown[]) => void);
     socketService.on(WS_EVENTS.USER_JOINED, onUserJoined as (...args: unknown[]) => void);
     socketService.on(WS_EVENTS.USER_LEFT, onUserLeft as (...args: unknown[]) => void);
     socketService.on(WS_EVENTS.ERROR, onError as (...args: unknown[]) => void);
+    socketService.on(WS_EVENTS.COMMENT_CREATED, onCommentCreated as (...args: unknown[]) => void);
+    socketService.on(WS_EVENTS.COMMENT_DELETED, onCommentDeleted as (...args: unknown[]) => void);
 
     // Join the room
     socketService.emit(WS_EVENTS.JOIN_ROOM, {
@@ -196,6 +222,7 @@ export function useCollaboration(roomId: string) {
     // Cleanup on unmount
     return () => {
       socketService.off(WS_EVENTS.ROOM_STATE, onRoomState as (...args: unknown[]) => void);
+      socketService.off(WS_EVENTS.CANVAS_RESTORED, onCanvasRestored as (...args: unknown[]) => void);
       socketService.off(WS_EVENTS.OPERATION_BROADCAST, onOperationBroadcast as (...args: unknown[]) => void);
       socketService.off(WS_EVENTS.OPERATION_ACK, onOperationAck as (...args: unknown[]) => void);
       socketService.off(WS_EVENTS.CURSOR_BROADCAST, onCursorBroadcast as (...args: unknown[]) => void);
@@ -203,9 +230,12 @@ export function useCollaboration(roomId: string) {
       socketService.off(WS_EVENTS.USER_LEFT, onUserLeft as (...args: unknown[]) => void);
       socketService.off(WS_EVENTS.ERROR, onError as (...args: unknown[]) => void);
       socketService.off(WS_EVENTS.WARNING_UPDATE, onWarningUpdate as (...args: unknown[]) => void);
+      socketService.off(WS_EVENTS.COMMENT_CREATED, onCommentCreated as (...args: unknown[]) => void);
+      socketService.off(WS_EVENTS.COMMENT_DELETED, onCommentDeleted as (...args: unknown[]) => void);
       socketService.disconnect();
 
       useWarningStore.getState().setWarnings([]);
+      useCommentStore.getState().setComments([]);
 
       // Clear all cursors and active users when leaving the room
       useCollaborationStore.getState().setActiveUsers([]);

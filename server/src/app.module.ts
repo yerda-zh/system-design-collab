@@ -6,6 +6,8 @@ import { RoomsModule } from './rooms/rooms.module';
 import { CanvasStateModule } from './canvas/canvas-state.module';
 import { RedisModule } from './redis/redis.module';
 import { WarningsModule } from './warnings/warnings.module';
+import { SnapshotsModule } from './snapshots/snapshots.module';
+import { CommentsModule } from './comments/comments.module';
 
 @Module({
   imports: [
@@ -35,6 +37,8 @@ import { WarningsModule } from './warnings/warnings.module';
     RoomsModule,
     WarningsModule,
     CanvasStateModule,
+    SnapshotsModule,
+    CommentsModule,
   ],
 })
 export class AppModule {}

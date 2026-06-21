@@ -5,10 +5,12 @@ export const WS_EVENTS = {
   JOIN_ROOM: 'joinRoom',
   LEAVE_ROOM: 'leaveRoom',
   CANVAS_OPERATION: 'canvasOperation',
+  CANVAS_RESTORE: 'canvasRestore',
   CURSOR_MOVE: 'cursorMove',
 
   // Server → Client
   ROOM_STATE: 'roomState',
+  CANVAS_RESTORED: 'canvasRestored',
   OPERATION_BROADCAST: 'operationBroadcast',
   OPERATION_ACK: 'operationAck',
   CURSOR_BROADCAST: 'cursorBroadcast',
@@ -16,6 +18,10 @@ export const WS_EVENTS = {
   USER_LEFT: 'userLeft',
   ERROR: 'error',
   WARNING_UPDATE: 'warningUpdate',
+  SNAPSHOT_CREATED: 'snapshotCreated',
+  SNAPSHOT_DELETED: 'snapshotDeleted',
+  COMMENT_CREATED: 'commentCreated',
+  COMMENT_DELETED: 'commentDeleted',
 } as const;
 
 export interface CursorPosition {

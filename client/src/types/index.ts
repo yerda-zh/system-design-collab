@@ -39,3 +39,25 @@ export interface AuthUser {
   email: string;
   displayName: string;
 }
+
+export interface Snapshot {
+  id: string;
+  roomId: string;
+  name: string;
+  nodes: object[];
+  edges: object[];
+  createdBy: string;
+  createdAt: string;
+}
+
+export interface Comment {
+  id: string;
+  roomId: string;
+  targetId: string;
+  targetType: 'node' | 'edge';
+  body: string;
+  authorId: string;
+  authorName: string;
+  parentId: string | null;
+  createdAt: string;
+}

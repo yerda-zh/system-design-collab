@@ -2,6 +2,7 @@ import {
   Injectable,
   ConflictException,
   UnauthorizedException,
+  NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -72,5 +73,13 @@ export class AuthService {
                 displayName: user.displayName,
             },
         };
+    }
+
+    async getUserDisplayName(userId: string): Promise<string> {
+        const user = await this.usersRepository.findOne({ where: { id: userId } });
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+        return user.displayName;
     }
 }

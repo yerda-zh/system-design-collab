@@ -5,6 +5,7 @@ interface ContextMenuProps {
   y: number;
   onDelete: () => void;
   onClose: () => void;
+  onAddComment: () => void;
 }
 
 export default function ContextMenu({
@@ -12,6 +13,7 @@ export default function ContextMenu({
   y,
   onDelete,
   onClose,
+  onAddComment,
 }: ContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -43,6 +45,21 @@ export default function ContextMenu({
       }}
     >
       <button
+        style={styles.commentBtn}
+        onClick={() => {
+          onAddComment();
+          onClose();
+        }}
+        onMouseEnter={(e) => {
+          (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#eff6ff';
+        }}
+        onMouseLeave={(e) => {
+          (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent';
+        }}
+      >
+        💬 Add Comment
+      </button>
+      <button
         style={styles.deleteBtn}
         onClick={() => {
           onDelete();
@@ -62,6 +79,19 @@ export default function ContextMenu({
 }
 
 const styles: Record<string, React.CSSProperties> = {
+  commentBtn: {
+    width: '100%',
+    padding: '0.6rem 1rem',
+    background: 'transparent',
+    border: 'none',
+    textAlign: 'left',
+    cursor: 'pointer',
+    fontSize: '0.9rem',
+    color: '#2563eb',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+  },
   deleteBtn: {
     width: '100%',
     padding: '0.6rem 1rem',

@@ -54,6 +54,25 @@ export class CanvasSyncService {
   }
 
   /**
+   * Returns the current live canvas state, reading Redis first and falling
+   * back to PostgreSQL for cold rooms. Used by snapshot creation so it
+   * always captures the live state rather than the last 5-second flush.
+   */
+  async getLiveState(roomId: string): Promise<CanvasStateData> {
+    const cached = await this.redisService.getCanvasState(roomId);
+    if (cached) return cached;
+
+    const persisted = await this.canvasStateService.getRawState(roomId);
+    return persisted
+      ? {
+          nodes: persisted.nodes as CanvasStateData['nodes'],
+          edges: persisted.edges as CanvasStateData['edges'],
+          revision: persisted.revision,
+        }
+      : { nodes: [], edges: [], revision: 0 };
+  }
+
+  /**
    * Applies an operation to the live canvas state in Redis.
    * Handles revision checking and conflict resolution.
    */
@@ -100,6 +119,28 @@ export class CanvasSyncService {
         error: 'Failed to apply operation',
       };
     }
+  }
+
+  /**
+   * Replaces the canvas state atomically in Redis and PostgreSQL.
+   * Called when a user restores a snapshot. Persists immediately so the
+   * 5-second flush cycle cannot overwrite the restored state with stale data.
+   */
+  async restoreState(
+    roomId: string,
+    nodes: CanvasStateData['nodes'],
+    edges: CanvasStateData['edges'],
+  ): Promise<number> {
+    const state = await this.redisService.getCanvasState(roomId);
+    const newRevision = (state?.revision ?? 0) + 1;
+    const newState: CanvasStateData = { nodes, edges, revision: newRevision };
+
+    await this.redisService.setCanvasState(roomId, newState);
+    await this.redisService.refreshRoomTTL(roomId);
+    await this.canvasStateService.persistState(roomId, newState);
+    this.dirtyRooms.delete(roomId);
+
+    return newRevision;
   }
 
   /**
