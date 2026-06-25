@@ -106,8 +106,17 @@ export default function CommentPanel({
     <div style={styles.overlay}>
       <div style={styles.panel}>
         <div style={styles.header}>
-          <span style={styles.title}>Comments</span>
-          <button style={styles.closeBtn} onClick={onClose}>✕</button>
+          <div style={styles.headerInner}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            </svg>
+            <span style={styles.title}>Comments</span>
+          </div>
+          <button style={styles.closeBtn} onClick={onClose} aria-label="Close">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </button>
         </div>
 
         <div style={styles.list}>
@@ -230,7 +239,7 @@ const styles: Record<string, React.CSSProperties> = {
     bottom: 0,
     width: '340px',
     backgroundColor: 'white',
-    boxShadow: '-4px 0 16px rgba(0,0,0,0.12)',
+    boxShadow: '-4px 0 24px rgba(0,0,0,0.1), -1px 0 0 #e5e7eb',
     display: 'flex',
     flexDirection: 'column',
     pointerEvents: 'all',
@@ -239,18 +248,32 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: '1rem',
+    padding: '0.875rem 1rem',
     borderBottom: '1px solid #e5e7eb',
     flexShrink: 0,
   },
-  title: { fontWeight: 600, fontSize: '1rem' },
+  headerInner: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+  },
+  title: {
+    fontWeight: 600,
+    fontSize: '0.9375rem',
+    color: '#111827',
+    letterSpacing: '-0.01em',
+  },
   closeBtn: {
     background: 'none',
-    border: 'none',
+    border: '1px solid transparent',
     cursor: 'pointer',
-    fontSize: '1rem',
-    color: '#6b7280',
-    padding: '0 0.25rem',
+    color: '#9ca3af',
+    padding: '0.25rem',
+    borderRadius: '6px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    transition: 'color 0.15s',
   },
   list: {
     flex: 1,
@@ -272,10 +295,11 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
     gap: '0.375rem',
+    backgroundColor: '#fafafa',
   },
   replyCard: {
     marginLeft: '1rem',
-    borderLeft: '2px solid #e5e7eb',
+    borderLeft: '2px solid #fed7aa',
     paddingLeft: '0.75rem',
     display: 'flex',
     flexDirection: 'column',
@@ -292,7 +316,7 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#111827',
   },
   time: {
-    fontSize: '0.75rem',
+    fontSize: '0.72rem',
     color: '#9ca3af',
   },
   body: {
@@ -301,10 +325,11 @@ const styles: Record<string, React.CSSProperties> = {
     margin: 0,
     whiteSpace: 'pre-wrap',
     wordBreak: 'break-word',
+    lineHeight: 1.55,
   },
   commentActions: {
     display: 'flex',
-    gap: '0.5rem',
+    gap: '0.75rem',
     marginTop: '0.125rem',
   },
   replyBtn: {
@@ -312,8 +337,9 @@ const styles: Record<string, React.CSSProperties> = {
     border: 'none',
     cursor: 'pointer',
     fontSize: '0.75rem',
-    color: '#2563eb',
+    color: '#f97316',
     padding: 0,
+    fontWeight: 500,
   },
   deleteBtn: {
     background: 'none',
@@ -342,6 +368,7 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: '6px',
     cursor: 'pointer',
     fontSize: '0.8rem',
+    fontWeight: 500,
   },
   inputArea: {
     padding: '0.75rem',
@@ -350,6 +377,7 @@ const styles: Record<string, React.CSSProperties> = {
     flexDirection: 'column',
     gap: '0.5rem',
     flexShrink: 0,
+    backgroundColor: '#fafafa',
   },
   textarea: {
     width: '100%',
@@ -357,20 +385,24 @@ const styles: Record<string, React.CSSProperties> = {
     border: '1px solid #e5e7eb',
     borderRadius: '6px',
     fontSize: '0.875rem',
-    resize: 'vertical',
-    boxSizing: 'border-box',
+    resize: 'vertical' as const,
+    boxSizing: 'border-box' as const,
     fontFamily: 'inherit',
     outline: 'none',
+    backgroundColor: 'white',
+    color: '#111827',
+    transition: 'border-color 0.15s',
   },
   submitBtn: {
     padding: '0.5rem 1rem',
-    backgroundColor: '#2563eb',
+    backgroundColor: '#f97316',
     color: 'white',
     border: 'none',
     borderRadius: '6px',
     cursor: 'pointer',
     fontSize: '0.875rem',
-    fontWeight: 500,
+    fontWeight: 600,
     alignSelf: 'flex-end',
+    transition: 'background-color 0.15s',
   },
 };
