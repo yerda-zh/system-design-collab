@@ -308,9 +308,19 @@ function CanvasInner({ onEmitOperation, onCursorMove, onOpenComments }: CanvasIn
         deleteKeyCode={['Backspace', 'Delete']}
         fitView
       >
-        <Background />
-        <Controls />
-        <MiniMap nodeColor={nodeColor} nodeBorderRadius={4} />
+        <Background color="#e2e8f0" gap={20} size={1} />
+        <Controls style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.1)', borderRadius: '8px', border: '1px solid #e5e7eb', overflow: 'hidden' }} />
+        <MiniMap
+          nodeColor={nodeColor}
+          nodeBorderRadius={4}
+          style={{
+            backgroundColor: '#f8fafc',
+            border: '1px solid #e5e7eb',
+            borderRadius: '8px',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+          }}
+          maskColor="rgba(248,250,252,0.7)"
+        />
       </ReactFlow>
 
       <CursorOverlay />

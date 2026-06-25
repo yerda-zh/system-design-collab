@@ -129,10 +129,17 @@ export default function RoomPage() {
   return (
     <div style={styles.container}>
       <div style={styles.topBar}>
-        <button style={styles.backBtn} onClick={() => navigate('/dashboard')}>
-          ← Dashboard
-        </button>
+        {/* Left: back button */}
+        <div style={styles.topBarLeft}>
+          <button style={styles.backBtn} onClick={() => navigate('/dashboard')} title="Back to dashboard">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M19 12H5M12 19l-7-7 7-7" />
+            </svg>
+            <span>Dashboard</span>
+          </button>
+        </div>
 
+        {/* Center: room name */}
         <div style={styles.center}>
           {isOwner && isEditingName ? (
             <input
@@ -157,33 +164,72 @@ export default function RoomPage() {
                   setNameInput(roomName);
                 }
               }}
+              title={isOwner ? 'Click to rename' : undefined}
             >
               <span style={{ ...styles.roomName, cursor: isOwner ? 'pointer' : 'default' }}>
                 {roomName || roomId}
               </span>
-              {isOwner && isHoveringName && <span style={styles.pencil}>✏️</span>}
+              {isOwner && isHoveringName && (
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                </svg>
+              )}
             </div>
           )}
         </div>
 
+        {/* Right: actions */}
         <div style={styles.actions}>
           <ActiveUsers />
-          {isDirty && <span style={styles.unsaved}>Unsaved changes</span>}
-          <button style={styles.shareBtn} onClick={() => setShowShare(true)}>Share</button>
-          <button style={styles.shareBtn} onClick={() => setShowSnapshots(true)}>Snapshots</button>
+          {isDirty && (
+            <span style={styles.unsaved}>
+              <span style={styles.unsavedDot} />
+              Unsaved
+            </span>
+          )}
+          <button style={styles.ghostBtn} onClick={() => setShowShare(true)}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
+              <path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98" />
+            </svg>
+            Share
+          </button>
+          <button style={styles.ghostBtn} onClick={() => setShowSnapshots(true)}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+            Snapshots
+          </button>
           <button
-            style={{ ...styles.saveBtn, opacity: saving ? 0.6 : 1 }}
+            style={{ ...styles.saveBtn, opacity: saving ? 0.65 : 1 }}
             onClick={handleSave}
             disabled={saving}
           >
-            {saving ? 'Saving...' : 'Save (Ctrl+S)'}
+            {saving ? (
+              'Saving...'
+            ) : (
+              <>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                  <polyline points="17 21 17 13 7 13 7 21" />
+                  <polyline points="7 3 7 8 15 8" />
+                </svg>
+                Save
+              </>
+            )}
           </button>
         </div>
       </div>
 
       {!isConnected && (
         <div style={styles.disconnectBanner}>
-          ⚠ Connection lost — trying to reconnect...
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+            <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
+          </svg>
+          Connection lost — trying to reconnect...
         </div>
       )}
 
@@ -219,7 +265,7 @@ export default function RoomPage() {
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  container: { display: 'flex', flexDirection: 'column', height: '100vh' },
+  container: { display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#f8fafc' },
   loading: {
     display: 'flex',
     flexDirection: 'column',
@@ -227,74 +273,125 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     height: '100vh',
     gap: '1rem',
-    color: '#6b7280',
+    backgroundColor: '#f8fafc',
   },
   spinner: {
-    width: '32px',
-    height: '32px',
-    border: '3px solid #e5e7eb',
-    borderTop: '3px solid #2563eb',
+    width: '28px',
+    height: '28px',
+    border: '2.5px solid #e5e7eb',
+    borderTop: '2.5px solid #f97316',
     borderRadius: '50%',
-    animation: 'spin 1s linear infinite',
+    animation: 'spin 0.8s linear infinite',
   },
-  loadingText: { fontSize: '0.95rem', color: '#6b7280' },
+  loadingText: { fontSize: '0.875rem', color: '#6b7280', fontWeight: 500 },
   topBar: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: '0.6rem 1rem',
+    padding: '0 0.875rem',
+    height: '48px',
     backgroundColor: 'white',
     borderBottom: '1px solid #e5e7eb',
     zIndex: 10,
+    flexShrink: 0,
   },
+  topBarLeft: { display: 'flex', alignItems: 'center', minWidth: '120px' },
   backBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.375rem',
     background: 'none',
     border: 'none',
     cursor: 'pointer',
-    fontSize: '0.9rem',
-    color: '#2563eb',
+    fontSize: '0.8125rem',
+    fontWeight: 500,
+    color: '#6b7280',
+    padding: '0.375rem 0.5rem',
+    borderRadius: '6px',
+    transition: 'color 0.15s, background-color 0.15s',
   },
-  center: { position: 'absolute', left: '50%', transform: 'translateX(-50%)' },
-  roomNameRow: { display: 'flex', alignItems: 'center', gap: '0.3rem' },
-  roomName: { fontWeight: 600, fontSize: '1rem' },
+  center: {
+    position: 'absolute',
+    left: '50%',
+    transform: 'translateX(-50%)',
+  },
+  roomNameRow: { display: 'flex', alignItems: 'center', gap: '0.375rem' },
+  roomName: {
+    fontWeight: 600,
+    fontSize: '0.9375rem',
+    color: '#111827',
+    letterSpacing: '-0.01em',
+  },
   roomNameInput: {
     fontWeight: 600,
-    fontSize: '1rem',
-    border: 'none',
-    outline: '1px solid #2563eb',
-    borderRadius: '4px',
-    padding: '0 4px',
+    fontSize: '0.9375rem',
+    border: '1px solid #f97316',
+    outline: '3px solid rgba(249,115,22,0.12)',
+    borderRadius: '5px',
+    padding: '2px 6px',
     background: 'white',
+    color: '#111827',
+    letterSpacing: '-0.01em',
+    minWidth: '120px',
   },
-  pencil: { fontSize: '0.8rem', cursor: 'pointer' },
-  actions: { display: 'flex', alignItems: 'center', gap: '0.75rem' },
-  unsaved: { fontSize: '0.85rem', color: '#9ca3af' },
+  actions: { display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: '120px', justifyContent: 'flex-end' },
+  unsaved: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.3rem',
+    fontSize: '0.78rem',
+    color: '#9ca3af',
+    fontWeight: 500,
+  },
+  unsavedDot: {
+    width: '6px',
+    height: '6px',
+    borderRadius: '50%',
+    backgroundColor: '#f59e0b',
+    display: 'inline-block',
+    flexShrink: 0,
+  },
   disconnectBanner: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '0.5rem',
     width: '100%',
-    backgroundColor: '#fef3c7',
+    backgroundColor: '#fffbeb',
     color: '#92400e',
-    fontSize: '0.82rem',
-    textAlign: 'center',
-    padding: '0.4rem',
+    fontSize: '0.8rem',
+    fontWeight: 500,
+    padding: '0.5rem',
+    borderBottom: '1px solid #fde68a',
+    flexShrink: 0,
   },
-  shareBtn: {
-    padding: '0.5rem 1rem',
+  ghostBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.35rem',
+    padding: '0.375rem 0.625rem',
     backgroundColor: 'white',
     color: '#374151',
     border: '1px solid #e5e7eb',
     borderRadius: '6px',
     cursor: 'pointer',
-    fontSize: '0.9rem',
+    fontSize: '0.8125rem',
     fontWeight: 500,
+    transition: 'border-color 0.15s, color 0.15s',
   },
   saveBtn: {
-    padding: '0.5rem 1rem',
-    backgroundColor: '#2563eb',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.35rem',
+    padding: '0.375rem 0.75rem',
+    backgroundColor: '#f97316',
     color: 'white',
     border: 'none',
     borderRadius: '6px',
     cursor: 'pointer',
-    fontSize: '0.9rem',
+    fontSize: '0.8125rem',
+    fontWeight: 600,
+    transition: 'background-color 0.15s',
   },
   main: { display: 'flex', flex: 1, overflow: 'hidden' },
   canvasWrapper: { flex: 1, height: '100%', position: 'relative' },

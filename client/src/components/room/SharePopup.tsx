@@ -77,7 +77,11 @@ export default function SharePopup({ roomId, isOwner, onClose }: SharePopupProps
       <div ref={popupRef} style={styles.popup}>
         <div style={styles.header}>
           <h3 style={styles.title}>Share Canvas</h3>
-          <button style={styles.closeBtn} onClick={onClose}>✕</button>
+          <button style={styles.closeBtn} onClick={onClose} aria-label="Close">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </button>
         </div>
 
         {loadError && <p style={styles.error}>{loadError}</p>}
@@ -123,19 +127,21 @@ const styles: Record<string, React.CSSProperties> = {
   overlay: {
     position: 'fixed',
     inset: 0,
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    backgroundColor: 'rgba(15,23,42,0.35)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 1000,
+    backdropFilter: 'blur(2px)',
   },
   popup: {
     backgroundColor: 'white',
-    borderRadius: '10px',
-    boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+    borderRadius: '12px',
+    boxShadow: '0 4px 16px rgba(0,0,0,0.12), 0 20px 48px rgba(0,0,0,0.08)',
     padding: '1.5rem',
     width: '420px',
     maxWidth: '90vw',
+    border: '1px solid #f1f5f9',
   },
   header: {
     display: 'flex',
@@ -143,22 +149,33 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     marginBottom: '1.25rem',
   },
-  title: { margin: 0, fontSize: '1.1rem', fontWeight: 700 },
+  title: {
+    margin: 0,
+    fontSize: '1rem',
+    fontWeight: 700,
+    color: '#111827',
+    letterSpacing: '-0.01em',
+  },
   closeBtn: {
     background: 'none',
-    border: 'none',
+    border: '1px solid transparent',
     cursor: 'pointer',
-    fontSize: '1rem',
     color: '#9ca3af',
     padding: '0.25rem',
+    borderRadius: '6px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    transition: 'color 0.15s, border-color 0.15s',
+    lineHeight: 1,
   },
   label: {
-    margin: '0 0 0.4rem',
-    fontSize: '0.8rem',
-    fontWeight: 600,
+    margin: '0 0 0.375rem',
+    fontSize: '0.75rem',
+    fontWeight: 700,
     color: '#6b7280',
-    textTransform: 'uppercase',
-    letterSpacing: '0.05em',
+    textTransform: 'uppercase' as const,
+    letterSpacing: '0.06em',
   },
   linkRow: {
     display: 'flex',
@@ -167,29 +184,32 @@ const styles: Record<string, React.CSSProperties> = {
   },
   linkInput: {
     flex: 1,
-    padding: '0.6rem 0.75rem',
+    padding: '0.5625rem 0.75rem',
     border: '1px solid #e5e7eb',
     borderRadius: '6px',
-    fontSize: '0.85rem',
+    fontSize: '0.8125rem',
     color: '#374151',
-    backgroundColor: '#f9fafb',
+    backgroundColor: '#f8fafc',
     cursor: 'text',
+    outline: 'none',
   },
   copyBtn: {
-    padding: '0.6rem 1rem',
-    backgroundColor: '#2563eb',
+    padding: '0.5625rem 1rem',
+    backgroundColor: '#f97316',
     color: 'white',
     border: 'none',
     borderRadius: '6px',
     cursor: 'pointer',
-    fontSize: '0.85rem',
+    fontSize: '0.8125rem',
     fontWeight: 600,
-    whiteSpace: 'nowrap',
+    whiteSpace: 'nowrap' as const,
+    transition: 'background-color 0.15s',
   },
   hint: {
     margin: '0 0 1rem',
     fontSize: '0.78rem',
     color: '#9ca3af',
+    lineHeight: 1.5,
   },
   regenerateBtn: {
     background: 'none',
@@ -197,10 +217,11 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: '6px',
     padding: '0.5rem 0.75rem',
     cursor: 'pointer',
-    fontSize: '0.82rem',
+    fontSize: '0.8rem',
     color: '#6b7280',
     width: '100%',
+    transition: 'border-color 0.15s, color 0.15s',
   },
-  loading: { color: '#9ca3af', fontSize: '0.9rem' },
+  loading: { color: '#9ca3af', fontSize: '0.875rem' },
   error: { color: '#dc2626', fontSize: '0.85rem', margin: '0 0 0.75rem' },
 };

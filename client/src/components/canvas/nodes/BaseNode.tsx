@@ -61,17 +61,17 @@ function BaseNode({ id, data, selected }: BaseNodeProps) {
           : hasWarnings
             ? '#d97706'
             : selected
-              ? '#2563eb'
+              ? '#f97316'
               : config.color,
         boxShadow: isHighlighted
-          ? '0 0 0 4px #f59e0b, 0 0 12px rgba(245, 158, 11, 0.5)'
+          ? '0 0 0 4px rgba(249,115,22,0.3), 0 0 16px rgba(249,115,22,0.4)'
           : hasHighSeverity
-            ? '0 0 0 2px #dc2626'
+            ? '0 0 0 2px rgba(220,38,38,0.3)'
             : hasWarnings
-              ? '0 0 0 2px #d97706'
+              ? '0 0 0 2px rgba(217,119,6,0.3)'
               : selected
-                ? '0 0 0 2px #2563eb'
-                : '0 2px 6px rgba(0,0,0,0.15)',
+                ? '0 0 0 3px rgba(249,115,22,0.2)'
+                : '0 1px 4px rgba(0,0,0,0.1)',
       }}
     >
       {/* Target handles rendered first — sit below source handles */}
@@ -166,60 +166,70 @@ function BaseNode({ id, data, selected }: BaseNodeProps) {
 
 const styles: Record<string, React.CSSProperties> = {
   node: {
-    width: '160px',
+    width: '164px',
     backgroundColor: 'white',
-    border: '2px solid',
-    borderRadius: '8px',
+    border: '1.5px solid',
+    borderRadius: '10px',
     overflow: 'visible',
-    fontFamily: 'sans-serif',
+    fontFamily: "'Inter', -apple-system, sans-serif",
     position: 'relative',
   },
   header: {
     display: 'flex',
     alignItems: 'center',
-    gap: '0.4rem',
-    padding: '0.4rem 0.6rem',
-    borderRadius: '6px 6px 0 0',
+    gap: '0.375rem',
+    padding: '0.375rem 0.6rem',
+    borderRadius: '8px 8px 0 0',
     overflow: 'hidden',
   },
-  icon: { fontSize: '1rem' },
+  icon: { fontSize: '0.875rem' },
   typeLabel: {
     color: 'white',
-    fontSize: '0.7rem',
-    fontWeight: 600,
+    fontSize: '0.65rem',
+    fontWeight: 700,
     textTransform: 'uppercase',
-    letterSpacing: '0.05em',
+    letterSpacing: '0.06em',
   },
-  body: { padding: '0.5rem 0.6rem', cursor: 'text' },
-  label: { fontSize: '0.9rem', fontWeight: 500, color: '#1f2937' },
+  body: {
+    padding: '0.5rem 0.625rem 0.625rem',
+    cursor: 'text',
+    borderTop: '1px solid rgba(0,0,0,0.06)',
+  },
+  label: {
+    fontSize: '0.875rem',
+    fontWeight: 500,
+    color: '#1f2937',
+    lineHeight: 1.4,
+  },
   labelInput: {
     width: '100%',
     border: 'none',
     outline: 'none',
     background: 'transparent',
-    fontSize: '0.9rem',
+    fontSize: '0.875rem',
     fontWeight: 500,
     color: '#1f2937',
     padding: 0,
+    fontFamily: 'inherit',
   },
   handle: {
-    width: '10px',
-    height: '10px',
-    backgroundColor: '#94a3b8',
+    width: '9px',
+    height: '9px',
+    backgroundColor: '#cbd5e1',
     border: '2px solid white',
   },
   badge: {
     position: 'absolute',
-    top: '-8px',
-    right: '-8px',
-    width: '20px',
-    height: '20px',
+    top: '-7px',
+    right: '-7px',
+    width: '18px',
+    height: '18px',
     borderRadius: '50%',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     color: 'white',
-    fontSize: '0.7rem',
+    fontSize: '0.65rem',
     fontWeight: 700,
     border: '2px solid white',
     zIndex: 10,
@@ -230,13 +240,13 @@ const styles: Record<string, React.CSSProperties> = {
     bottom: '100%',
     right: 0,
     marginBottom: '6px',
-    backgroundColor: '#1f2937',
+    backgroundColor: '#111827',
     color: 'white',
-    borderRadius: '6px',
+    borderRadius: '8px',
     padding: '0.5rem 0.75rem',
     width: '220px',
     zIndex: 1000,
-    boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+    boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
     pointerEvents: 'none',
   },
   tooltipRow: {
@@ -250,26 +260,26 @@ const styles: Record<string, React.CSSProperties> = {
   tooltipArrow: {
     position: 'absolute',
     bottom: '-4px',
-    right: '8px',
+    right: '10px',
     width: 0,
     height: 0,
     borderLeft: '4px solid transparent',
     borderRight: '4px solid transparent',
-    borderTop: '4px solid #1f2937',
+    borderTop: '4px solid #111827',
   },
   commentBadge: {
     position: 'absolute',
-    top: '-8px',
-    left: '-8px',
-    width: '20px',
-    height: '20px',
+    top: '-7px',
+    left: '-7px',
+    width: '18px',
+    height: '18px',
     borderRadius: '50%',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#2563eb',
+    backgroundColor: '#6366f1',
     color: 'white',
-    fontSize: '0.7rem',
+    fontSize: '0.65rem',
     fontWeight: 700,
     border: '2px solid white',
     zIndex: 10,
@@ -280,24 +290,24 @@ const styles: Record<string, React.CSSProperties> = {
     bottom: '100%',
     left: 0,
     marginBottom: '6px',
-    backgroundColor: '#1f2937',
+    backgroundColor: '#111827',
     color: 'white',
-    borderRadius: '6px',
+    borderRadius: '8px',
     padding: '0.5rem 0.75rem',
     width: '220px',
     zIndex: 1000,
-    boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+    boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
     pointerEvents: 'none',
   },
   commentTooltipArrow: {
     position: 'absolute',
     bottom: '-4px',
-    left: '8px',
+    left: '10px',
     width: 0,
     height: 0,
     borderLeft: '4px solid transparent',
     borderRight: '4px solid transparent',
-    borderTop: '4px solid #1f2937',
+    borderTop: '4px solid #111827',
   },
 };
 
