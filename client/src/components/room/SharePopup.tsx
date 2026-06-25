@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { isAxiosError } from 'axios';
 import { getInviteToken, getInviteTokenPublic, regenerateInvite } from '../../api/rooms';
+import { useToastStore } from '../../store/toastStore';
 
 interface SharePopupProps {
   roomId: string;
@@ -10,10 +11,10 @@ interface SharePopupProps {
 
 export default function SharePopup({ roomId, isOwner, onClose }: SharePopupProps) {
   const [inviteToken, setInviteToken] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
-  const [error, setError] = useState('');
+  const [loadError, setLoadError] = useState('');
   const popupRef = useRef<HTMLDivElement>(null);
+  const addToast = useToastStore((s) => s.addToast);
 
   const inviteUrl = inviteToken
     ? `${window.location.origin}/invite/${inviteToken}`
@@ -30,17 +31,16 @@ export default function SharePopup({ roomId, isOwner, onClose }: SharePopupProps
             const data = await getInviteTokenPublic(roomId);
             setInviteToken(data.inviteToken);
           } catch {
-            setError('Could not load invite link');
+            setLoadError('Could not load invite link');
           }
         } else {
-          setError('Could not load invite link');
+          setLoadError('Could not load invite link');
         }
       }
     };
     fetchToken();
   }, [roomId]);
 
-  // Close when clicking outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (popupRef.current && !popupRef.current.contains(e.target as Node)) {
@@ -54,10 +54,9 @@ export default function SharePopup({ roomId, isOwner, onClose }: SharePopupProps
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(inviteUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      addToast('Link copied!', 'success');
     } catch {
-      setError('Could not copy to clipboard');
+      addToast('Could not copy to clipboard', 'error');
     }
   };
 
@@ -67,7 +66,7 @@ export default function SharePopup({ roomId, isOwner, onClose }: SharePopupProps
       const data = await regenerateInvite(roomId);
       setInviteToken(data.inviteToken);
     } catch {
-      setError('Could not regenerate invite link');
+      addToast('Could not regenerate invite link', 'error');
     } finally {
       setRegenerating(false);
     }
@@ -81,7 +80,7 @@ export default function SharePopup({ roomId, isOwner, onClose }: SharePopupProps
           <button style={styles.closeBtn} onClick={onClose}>✕</button>
         </div>
 
-        {error && <p style={styles.error}>{error}</p>}
+        {loadError && <p style={styles.error}>{loadError}</p>}
 
         {!inviteToken ? (
           <p style={styles.loading}>Loading invite link...</p>
@@ -95,14 +94,8 @@ export default function SharePopup({ roomId, isOwner, onClose }: SharePopupProps
                 readOnly
                 onClick={(e) => (e.target as HTMLInputElement).select()}
               />
-              <button
-                style={{
-                  ...styles.copyBtn,
-                  backgroundColor: copied ? '#16a34a' : '#2563eb',
-                }}
-                onClick={handleCopy}
-              >
-                {copied ? '✓ Copied' : 'Copy'}
+              <button style={styles.copyBtn} onClick={handleCopy}>
+                Copy
               </button>
             </div>
 
@@ -184,13 +177,13 @@ const styles: Record<string, React.CSSProperties> = {
   },
   copyBtn: {
     padding: '0.6rem 1rem',
+    backgroundColor: '#2563eb',
     color: 'white',
     border: 'none',
     borderRadius: '6px',
     cursor: 'pointer',
     fontSize: '0.85rem',
     fontWeight: 600,
-    transition: 'background-color 0.2s',
     whiteSpace: 'nowrap',
   },
   hint: {

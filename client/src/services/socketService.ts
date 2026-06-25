@@ -1,7 +1,6 @@
 import { io, Socket } from "socket.io-client";
 import { useAuthStore } from "../store/authStore";
 
-// WebSocket event names — must match the server exactly
 export const WS_EVENTS = {
   JOIN_ROOM: 'joinRoom',
   LEAVE_ROOM: 'leaveRoom',
@@ -25,14 +24,22 @@ export const WS_EVENTS = {
 
 class SocketService {
   private socket: Socket | null = null;
-  // Queue of events to emit once the socket connects
-  private pendingEmits: { event: string; data: unknown }[] = []
+  private pendingEmits: { event: string; data: unknown }[] = [];
   private onAuthErrorCallback: (() => void) | null = null;
+  private onDisconnectCallback: (() => void) | null = null;
+  private onReconnectCallback: (() => void) | null = null;
 
   onAuthError(callback: () => void): void {
     this.onAuthErrorCallback = callback;
   }
 
+  onDisconnect(callback: () => void): void {
+    this.onDisconnectCallback = callback;
+  }
+
+  onReconnect(callback: () => void): void {
+    this.onReconnectCallback = callback;
+  }
 
   connect(): void {
     if (this.socket?.connected) return;
@@ -41,30 +48,35 @@ class SocketService {
 
     this.socket = io('http://localhost:3001', {
       auth: { token },
-      // Reconnect automatically if connection drops
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
     });
 
+    let wasConnected = false;
+
     this.socket.on('connect', () => {
-      console.log('WebSocket connected');
-      // Flush any events that were emitted before connection was ready
+      if (wasConnected) {
+        // This is a reconnect, not the initial connect
+        this.onReconnectCallback?.();
+      }
+      wasConnected = true;
       this.pendingEmits.forEach(({ event, data }) => {
         this.socket?.emit(event, data);
       });
       this.pendingEmits = [];
     });
 
-    this.socket.on('disconnect', (reason) => {
-      console.log('WebSocket disconnected:', reason);
+    this.socket.on('disconnect', (_reason) => {
+      this.onDisconnectCallback?.();
     });
 
     this.socket.on('connect_error', (err) => {
-      console.error('WebSocket connection error:', err.message);
-      if (err.message.toLowerCase().includes('unauthorized') ||
-          err.message.toLowerCase().includes('invalid token') ||
-          err.message.toLowerCase().includes('jwt')) {
+      if (
+        err.message.toLowerCase().includes('unauthorized') ||
+        err.message.toLowerCase().includes('invalid token') ||
+        err.message.toLowerCase().includes('jwt')
+      ) {
         this.onAuthErrorCallback?.();
       }
     });
@@ -75,17 +87,18 @@ class SocketService {
     this.socket = null;
     this.pendingEmits = [];
     this.onAuthErrorCallback = null;
+    this.onDisconnectCallback = null;
+    this.onReconnectCallback = null;
   }
 
   emit(event: string, data: unknown): void {
     if (this.socket?.connected) {
       this.socket.emit(event, data);
     } else {
-      // Socket not ready yet — queue the event
       this.pendingEmits.push({ event, data });
     }
   }
-  
+
   on(event: string, handler: (...args: unknown[]) => void): void {
     this.socket?.on(event, handler);
   }
@@ -99,5 +112,4 @@ class SocketService {
   }
 }
 
-// Singleton — one socket connection for the entire app
 export const socketService = new SocketService();

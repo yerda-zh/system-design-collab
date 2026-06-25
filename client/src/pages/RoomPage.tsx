@@ -12,6 +12,7 @@ import { useCanvasStore } from '../store/canvasStore';
 import { useCollaborationStore } from '../store/collaborationStore';
 import { useCollaboration } from '../hooks/useCollaboration';
 import { useAuthStore } from '../store/authStore';
+import { useToastStore } from '../store/toastStore';
 import type { NodeType } from '../types';
 
 export default function RoomPage() {
@@ -20,11 +21,11 @@ export default function RoomPage() {
 
   const { user } = useAuthStore();
   const { nodes, edges, setRevision, isDirty, markSaved } = useCanvasStore();
-  const { isJoined } = useCollaborationStore();
+  const { isJoined, isConnected } = useCollaborationStore();
   const { emitOperation, emitCursor } = useCollaboration(roomId!);
+  const addToast = useToastStore((s) => s.addToast);
 
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
   const [showShare, setShowShare] = useState(false);
   const [showSnapshots, setShowSnapshots] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
@@ -37,7 +38,6 @@ export default function RoomPage() {
     targetType: 'node' | 'edge';
   } | null>(null);
 
-  // Load room details to determine if current user is the owner
   useEffect(() => {
     if (!roomId) return;
     const fetchRoom = async () => {
@@ -59,12 +59,13 @@ export default function RoomPage() {
       const result = await saveCanvas(roomId, nodes, edges);
       setRevision(result.revision);
       markSaved();
+      addToast('Canvas saved', 'success');
     } catch {
-      setError('Failed to save');
+      addToast('Failed to save', 'error');
     } finally {
       setSaving(false);
     }
-  }, [roomId, nodes, edges, saving, setRevision, markSaved]);
+  }, [roomId, nodes, edges, saving, setRevision, markSaved, addToast]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -86,12 +87,12 @@ export default function RoomPage() {
     try {
       const updated = await updateRoomName(roomId!, trimmed);
       setRoomName(updated.name);
+      addToast('Room renamed', 'success');
     } catch {
-      setError('Failed to rename canvas');
-      setTimeout(() => setError(''), 3000);
+      addToast('Failed to rename canvas', 'error');
     }
     setIsEditingName(false);
-  }, [nameInput, roomName, roomId]);
+  }, [nameInput, roomName, roomId, addToast]);
 
   const handleAddNode = (nodeType: NodeType) => {
     window.__addNode?.(nodeType);
@@ -119,7 +120,8 @@ export default function RoomPage() {
   if (!isJoined) {
     return (
       <div style={styles.loading}>
-        <p>Connecting to canvas...</p>
+        <div style={styles.spinner} />
+        <p style={styles.loadingText}>Connecting to canvas...</p>
       </div>
     );
   }
@@ -159,9 +161,7 @@ export default function RoomPage() {
               <span style={{ ...styles.roomName, cursor: isOwner ? 'pointer' : 'default' }}>
                 {roomName || roomId}
               </span>
-              {isOwner && isHoveringName && (
-                <span style={styles.pencil}>✏️</span>
-              )}
+              {isOwner && isHoveringName && <span style={styles.pencil}>✏️</span>}
             </div>
           )}
         </div>
@@ -169,19 +169,8 @@ export default function RoomPage() {
         <div style={styles.actions}>
           <ActiveUsers />
           {isDirty && <span style={styles.unsaved}>Unsaved changes</span>}
-          {error && <span style={styles.error}>{error}</span>}
-          <button
-            style={styles.shareBtn}
-            onClick={() => setShowShare(true)}
-          >
-            Share
-          </button>
-          <button
-            style={styles.shareBtn}
-            onClick={() => setShowSnapshots(true)}
-          >
-            Snapshots
-          </button>
+          <button style={styles.shareBtn} onClick={() => setShowShare(true)}>Share</button>
+          <button style={styles.shareBtn} onClick={() => setShowSnapshots(true)}>Snapshots</button>
           <button
             style={{ ...styles.saveBtn, opacity: saving ? 0.6 : 1 }}
             onClick={handleSave}
@@ -192,11 +181,14 @@ export default function RoomPage() {
         </div>
       </div>
 
+      {!isConnected && (
+        <div style={styles.disconnectBanner}>
+          ⚠ Connection lost — trying to reconnect...
+        </div>
+      )}
+
       <div style={styles.main}>
-        <ComponentLibrary
-          onAddNode={handleAddNode}
-          onSelectNode={handleSelectNode}
-        />
+        <ComponentLibrary onAddNode={handleAddNode} onSelectNode={handleSelectNode} />
         <div style={styles.canvasWrapper}>
           <Canvas
             onEmitOperation={handleEmitOperation}
@@ -207,18 +199,11 @@ export default function RoomPage() {
       </div>
 
       {showShare && roomId && (
-        <SharePopup
-          roomId={roomId}
-          isOwner={isOwner}
-          onClose={() => setShowShare(false)}
-        />
+        <SharePopup roomId={roomId} isOwner={isOwner} onClose={() => setShowShare(false)} />
       )}
 
       {showSnapshots && roomId && (
-        <SnapshotsPanel
-          roomId={roomId}
-          onClose={() => setShowSnapshots(false)}
-        />
+        <SnapshotsPanel roomId={roomId} onClose={() => setShowSnapshots(false)} />
       )}
 
       {activeCommentTarget && roomId && (
@@ -237,11 +222,22 @@ const styles: Record<string, React.CSSProperties> = {
   container: { display: 'flex', flexDirection: 'column', height: '100vh' },
   loading: {
     display: 'flex',
+    flexDirection: 'column',
     justifyContent: 'center',
     alignItems: 'center',
     height: '100vh',
+    gap: '1rem',
     color: '#6b7280',
   },
+  spinner: {
+    width: '32px',
+    height: '32px',
+    border: '3px solid #e5e7eb',
+    borderTop: '3px solid #2563eb',
+    borderRadius: '50%',
+    animation: 'spin 1s linear infinite',
+  },
+  loadingText: { fontSize: '0.95rem', color: '#6b7280' },
   topBar: {
     display: 'flex',
     alignItems: 'center',
@@ -273,7 +269,14 @@ const styles: Record<string, React.CSSProperties> = {
   pencil: { fontSize: '0.8rem', cursor: 'pointer' },
   actions: { display: 'flex', alignItems: 'center', gap: '0.75rem' },
   unsaved: { fontSize: '0.85rem', color: '#9ca3af' },
-  error: { fontSize: '0.85rem', color: 'red' },
+  disconnectBanner: {
+    width: '100%',
+    backgroundColor: '#fef3c7',
+    color: '#92400e',
+    fontSize: '0.82rem',
+    textAlign: 'center',
+    padding: '0.4rem',
+  },
   shareBtn: {
     padding: '0.5rem 1rem',
     backgroundColor: 'white',

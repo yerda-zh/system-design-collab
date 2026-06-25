@@ -9,6 +9,7 @@ import { RoomsService } from '../rooms/rooms.service';
 import { CanvasStateService } from '../canvas/canvas-state.service';
 import { RedisService } from '../redis/redis.service';
 import { CreateSnapshotDto } from './dto/create-snapshot.dto';
+import { sanitizeText } from '../common/utils/sanitize';
 
 @Injectable()
 export class SnapshotsService {
@@ -34,7 +35,7 @@ export class SnapshotsService {
 
     const snapshot = this.snapshotsRepository.create({
       roomId,
-      name: dto.name,
+      name: sanitizeText(dto.name),
       nodes: source?.nodes ?? [],
       edges: source?.edges ?? [],
       createdBy: userId,

@@ -9,6 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Room } from './room.entity';
 import { RoomMember } from './room-member.entity';
 import { CreateRoomDto } from './dto/create-room.dto';
+import { sanitizeText } from '../common/utils/sanitize';
 
 @Injectable()
 export class RoomsService {
@@ -24,7 +25,7 @@ export class RoomsService {
         const inviteToken = uuidv4();
 
         const room = this.roomsRepository.create({
-            name: dto.name,
+            name: sanitizeText(dto.name),
             ownerId: userId,
             inviteToken,
         });
@@ -166,7 +167,7 @@ export class RoomsService {
             throw new ForbiddenException('Only the owner can rename the room');
         }
 
-        room.name = name;
+        room.name = sanitizeText(name);
         await this.roomsRepository.save(room);
         return room;
     }

@@ -38,6 +38,10 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     this.client.disconnect();
   }
 
+  async ping(): Promise<void> {
+    await this.client.ping();
+  }
+
   // --- Canvas State ---
 
   async getCanvasState(roomId: string): Promise<CanvasStateData | null> {

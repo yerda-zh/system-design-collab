@@ -8,6 +8,7 @@ import { Repository } from 'typeorm';
 import { Comment } from '../database/entities/comment.entity';
 import { RoomsService } from '../rooms/rooms.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
+import { sanitizeText } from '../common/utils/sanitize';
 
 @Injectable()
 export class CommentsService {
@@ -29,7 +30,7 @@ export class CommentsService {
       roomId,
       targetId: dto.targetId,
       targetType: dto.targetType,
-      body: dto.body,
+      body: sanitizeText(dto.body),
       authorId: userId,
       authorName,
       parentId: dto.parentId ?? null,

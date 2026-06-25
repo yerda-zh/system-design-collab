@@ -17,6 +17,31 @@ function relativeTime(iso: string): string {
   return `${days} day${days === 1 ? '' : 's'} ago`;
 }
 
+function EmptyComments() {
+  return (
+    <div style={emptyStyles.container}>
+      <svg width="40" height="36" viewBox="0 0 40 36" fill="none">
+        <rect x="1" y="1" width="38" height="28" rx="6" stroke="#d1d5db" strokeWidth="2" />
+        <polygon points="10,29 18,29 14,35" fill="none" stroke="#d1d5db" strokeWidth="2" strokeLinejoin="round" />
+      </svg>
+      <p style={emptyStyles.title}>No comments yet</p>
+      <p style={emptyStyles.subtitle}>Be the first to add a comment below</p>
+    </div>
+  );
+}
+
+const emptyStyles: Record<string, React.CSSProperties> = {
+  container: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '0.5rem',
+    padding: '2rem 1rem',
+  },
+  title: { color: '#6b7280', fontSize: '0.875rem' },
+  subtitle: { color: '#9ca3af', fontSize: '0.78rem', textAlign: 'center' },
+};
+
 interface CommentPanelProps {
   targetId: string;
   targetType: 'node' | 'edge';
@@ -87,7 +112,7 @@ export default function CommentPanel({
 
         <div style={styles.list}>
           {topLevel.length === 0 ? (
-            <p style={styles.empty}>No comments yet.</p>
+            <EmptyComments />
           ) : (
             topLevel.map((comment) => (
               <div key={comment.id} style={styles.commentBlock}>
@@ -234,12 +259,6 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
     gap: '0.75rem',
-  },
-  empty: {
-    color: '#9ca3af',
-    fontSize: '0.875rem',
-    textAlign: 'center',
-    marginTop: '1rem',
   },
   commentBlock: {
     display: 'flex',

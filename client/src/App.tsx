@@ -5,11 +5,14 @@ import DashboardPage from './pages/DashboardPage';
 import RoomPage from './pages/RoomPage';
 import { useAuthStore } from './store/authStore';
 import InvitePage from './pages/InvitePage';
+import { ToastContainer } from './components/common/Toast';
 
 export default function App() {
   const token = useAuthStore((state) => state.token);
 
   return (
+    <>
+    <ToastContainer />
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
@@ -24,5 +27,6 @@ export default function App() {
       <Route path="*" element={<Navigate to="/dashboard" />} />
       <Route path="/invite/:token" element={<InvitePage />} />
     </Routes>
+    </>
   );
 }

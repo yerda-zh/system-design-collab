@@ -68,6 +68,18 @@ export function useCollaboration(roomId: string) {
       navigate('/login');
     });
 
+    socketService.onDisconnect(() => {
+      setConnected(false);
+    });
+
+    socketService.onReconnect(() => {
+      setConnected(true);
+      socketService.emit(WS_EVENTS.JOIN_ROOM, {
+        roomId,
+        displayName: user.displayName,
+      });
+    });
+
     // Connect and join the room
     socketService.connect();
     setConnected(true);
@@ -174,8 +186,6 @@ export function useCollaboration(roomId: string) {
       if (payload.success) {
         serverRevision.current = payload.serverRevision;
         setRevision(payload.serverRevision);
-      } else {
-        console.error('Operation rejected:', payload.error);
       }
     };
 

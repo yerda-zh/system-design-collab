@@ -57,7 +57,11 @@ export default function WarningPanel({ onSelectNode }: WarningPanelProps) {
       {isExpanded && (
         <div style={styles.list}>
           {warnings.length === 0 ? (
-            <p style={styles.empty}>✓ No architectural issues detected</p>
+            <div style={styles.emptyState}>
+              <div style={styles.emptyCheck}>✓</div>
+              <p style={styles.emptyTitle}>Architecture looks good</p>
+              <p style={styles.emptySubtitle}>No issues detected</p>
+            </div>
           ) : (
             warnings.map((warning) => (
               <WarningItem
@@ -152,10 +156,34 @@ const styles: Record<string, React.CSSProperties> = {
     maxHeight: '240px',
     overflowY: 'auto',
   },
-  empty: {
-    padding: '0.75rem 1rem',
-    fontSize: '0.8rem',
+  emptyState: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '0.25rem',
+    padding: '1rem',
+  },
+  emptyCheck: {
+    width: '32px',
+    height: '32px',
+    borderRadius: '50%',
+    backgroundColor: '#dcfce7',
     color: '#16a34a',
+    fontSize: '1.2rem',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: '0.25rem',
+  },
+  emptyTitle: {
+    fontSize: '0.82rem',
+    fontWeight: 600,
+    color: '#16a34a',
+    margin: 0,
+  },
+  emptySubtitle: {
+    fontSize: '0.75rem',
+    color: '#9ca3af',
     margin: 0,
   },
   item: {

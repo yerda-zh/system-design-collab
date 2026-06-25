@@ -2,36 +2,73 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getMyRooms, getSharedRooms, createRoom, joinRoom } from '../api/rooms';
 import { useAuthStore } from '../store/authStore';
+import { useToastStore } from '../store/toastStore';
 import SharePopup from '../components/room/SharePopup';
 import type { Room } from '../types';
+
+function SkeletonCard() {
+  return (
+    <div
+      style={{
+        height: '80px',
+        borderRadius: '8px',
+        backgroundColor: '#f3f4f6',
+        animation: 'pulse 1.5s ease-in-out infinite',
+      }}
+    />
+  );
+}
+
+function EmptyCanvases() {
+  return (
+    <div style={styles.emptyState}>
+      <svg width="80" height="60" viewBox="0 0 80 60" fill="none">
+        <rect x="1" y="1" width="78" height="58" rx="4" stroke="#d1d5db" strokeWidth="2" strokeDasharray="6 4" />
+      </svg>
+      <p style={styles.emptyTitle}>No canvases yet</p>
+      <p style={styles.emptySubtitle}>Create your first canvas above</p>
+    </div>
+  );
+}
+
+function EmptyShared() {
+  return (
+    <div style={styles.emptyState}>
+      <svg width="80" height="60" viewBox="0 0 80 60" fill="none">
+        <rect x="1" y="1" width="78" height="58" rx="4" stroke="#d1d5db" strokeWidth="2" strokeDasharray="6 4" />
+      </svg>
+      <p style={styles.emptyTitle}>Nothing shared with you yet</p>
+      <p style={styles.emptySubtitle}>Ask a teammate to share their canvas invite link</p>
+    </div>
+  );
+}
 
 export default function DashboardPage() {
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
+  const addToast = useToastStore((s) => s.addToast);
 
   const [myRooms, setMyRooms] = useState<Room[]>([]);
   const [sharedRooms, setSharedRooms] = useState<Room[]>([]);
+  const [loading, setLoading] = useState(true);
   const [newRoomName, setNewRoomName] = useState('');
   const [inviteInput, setInviteInput] = useState('');
-  const [error, setError] = useState('');
   const [sharingRoomId, setSharingRoomId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchRooms = async () => {
       try {
-        const [mine, shared] = await Promise.all([
-          getMyRooms(),
-          getSharedRooms(),
-        ]);
+        const [mine, shared] = await Promise.all([getMyRooms(), getSharedRooms()]);
         setMyRooms(mine);
         setSharedRooms(shared);
       } catch {
-        setError('Failed to load rooms');
+        addToast('Failed to load rooms', 'error');
+      } finally {
+        setLoading(false);
       }
     };
-
     fetchRooms();
-  }, []);
+  }, [addToast]);
 
   const handleCreateRoom = async () => {
     if (!newRoomName.trim()) return;
@@ -40,20 +77,19 @@ export default function DashboardPage() {
       setNewRoomName('');
       setMyRooms((prev) => [room, ...prev]);
     } catch {
-      setError('Failed to create room');
+      addToast('Failed to create room', 'error');
     }
   };
 
   const handleJoinRoom = async () => {
     if (!inviteInput.trim()) return;
     try {
-      // Extract the token from a full URL or use it directly
       const token = inviteInput.trim().split('/').pop() ?? inviteInput.trim();
       const result = await joinRoom(token);
       setInviteInput('');
       navigate(`/room/${result.roomId}`);
     } catch {
-      setError('Invalid invite link');
+      addToast('Invalid invite link', 'error');
     }
   };
 
@@ -63,16 +99,11 @@ export default function DashboardPage() {
         <h1 style={styles.title}>System Design Collab</h1>
         <div style={styles.userInfo}>
           <span>{user?.displayName}</span>
-          <button style={styles.logoutBtn} onClick={logout}>
-            Logout
-          </button>
+          <button style={styles.logoutBtn} onClick={logout}>Logout</button>
         </div>
       </div>
 
-      {error && <p style={styles.error}>{error}</p>}
-
       <div style={styles.content}>
-        {/* Create new room */}
         <div style={styles.section}>
           <h2>New Canvas</h2>
           <div style={styles.row}>
@@ -83,13 +114,10 @@ export default function DashboardPage() {
               onChange={(e) => setNewRoomName(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleCreateRoom()}
             />
-            <button style={styles.button} onClick={handleCreateRoom}>
-              Create
-            </button>
+            <button style={styles.button} onClick={handleCreateRoom}>Create</button>
           </div>
         </div>
 
-        {/* Join via invite */}
         <div style={styles.section}>
           <h2>Join Canvas</h2>
           <div style={styles.row}>
@@ -100,17 +128,20 @@ export default function DashboardPage() {
               onChange={(e) => setInviteInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleJoinRoom()}
             />
-            <button style={styles.button} onClick={handleJoinRoom}>
-              Join
-            </button>
+            <button style={styles.button} onClick={handleJoinRoom}>Join</button>
           </div>
         </div>
 
-        {/* My canvases */}
         <div style={styles.section}>
           <h2>My Canvases</h2>
-          {myRooms.length === 0 ? (
-            <p style={styles.empty}>No canvases yet. Create one above.</p>
+          {loading ? (
+            <div style={styles.grid}>
+              <SkeletonCard />
+              <SkeletonCard />
+              <SkeletonCard />
+            </div>
+          ) : myRooms.length === 0 ? (
+            <EmptyCanvases />
           ) : (
             <div style={styles.grid}>
               {myRooms.map((room) => (
@@ -121,29 +152,29 @@ export default function DashboardPage() {
                 >
                   <button
                     style={styles.shareIconBtn}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSharingRoomId(room.id);
-                    }}
+                    onClick={(e) => { e.stopPropagation(); setSharingRoomId(room.id); }}
                     title="Share"
                   >
                     🔗
                   </button>
                   <p style={styles.roomName}>{room.name}</p>
-                  <p style={styles.roomDate}>
-                    {new Date(room.createdAt).toLocaleDateString()}
-                  </p>
+                  <p style={styles.roomDate}>{new Date(room.createdAt).toLocaleDateString()}</p>
                 </div>
               ))}
             </div>
           )}
         </div>
 
-        {/* Shared with me */}
         <div style={styles.section}>
           <h2>Shared with Me</h2>
-          {sharedRooms.length === 0 ? (
-            <p style={styles.empty}>No shared canvases yet.</p>
+          {loading ? (
+            <div style={styles.grid}>
+              <SkeletonCard />
+              <SkeletonCard />
+              <SkeletonCard />
+            </div>
+          ) : sharedRooms.length === 0 ? (
+            <EmptyShared />
           ) : (
             <div style={styles.grid}>
               {sharedRooms.map((room) => (
@@ -154,18 +185,13 @@ export default function DashboardPage() {
                 >
                   <button
                     style={styles.shareIconBtn}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSharingRoomId(room.id);
-                    }}
+                    onClick={(e) => { e.stopPropagation(); setSharingRoomId(room.id); }}
                     title="Share"
                   >
                     🔗
                   </button>
                   <p style={styles.roomName}>{room.name}</p>
-                  <p style={styles.roomDate}>
-                    {new Date(room.createdAt).toLocaleDateString()}
-                  </p>
+                  <p style={styles.roomDate}>{new Date(room.createdAt).toLocaleDateString()}</p>
                 </div>
               ))}
             </div>
@@ -246,6 +272,13 @@ const styles: Record<string, React.CSSProperties> = {
   },
   roomName: { margin: '0 0 0.5rem', fontWeight: 600 },
   roomDate: { margin: 0, fontSize: '0.85rem', color: '#888' },
-  error: { color: 'red', padding: '0 2rem' },
-  empty: { color: '#888' },
+  emptyState: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '0.5rem',
+    padding: '2rem 1rem',
+  },
+  emptyTitle: { color: '#6b7280', fontSize: '0.95rem' },
+  emptySubtitle: { color: '#9ca3af', fontSize: '0.82rem' },
 };

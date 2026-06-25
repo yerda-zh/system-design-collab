@@ -3,6 +3,7 @@ import type { Node, Edge } from '@xyflow/react';
 import type { NodeData, Snapshot } from '../../types';
 import { saveSnapshot, getSnapshots, deleteSnapshot } from '../../api/canvas';
 import { useCanvasStore } from '../../store/canvasStore';
+import { useToastStore } from '../../store/toastStore';
 import { socketService, WS_EVENTS } from '../../services/socketService';
 
 interface SnapshotsPanelProps {
@@ -12,12 +13,12 @@ interface SnapshotsPanelProps {
 
 export default function SnapshotsPanel({ roomId, onClose }: SnapshotsPanelProps) {
   const { setNodes, setEdges } = useCanvasStore();
+  const addToast = useToastStore((s) => s.addToast);
 
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
   const [loading, setLoading] = useState(true);
   const [nameInput, setNameInput] = useState('');
   const [saving, setSaving] = useState(false);
-  const [saveSuccess, setSaveSuccess] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -55,8 +56,9 @@ export default function SnapshotsPanel({ roomId, onClose }: SnapshotsPanelProps)
     try {
       await saveSnapshot(roomId, name);
       setNameInput('');
-      setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 2000);
+      addToast('Snapshot saved', 'success');
+    } catch {
+      addToast('Failed to save snapshot', 'error');
     } finally {
       setSaving(false);
     }
@@ -64,8 +66,13 @@ export default function SnapshotsPanel({ roomId, onClose }: SnapshotsPanelProps)
 
   const handleDelete = async (snapshot: Snapshot) => {
     if (!window.confirm(`Delete snapshot "${snapshot.name}"?`)) return;
-    await deleteSnapshot(snapshot.id);
-    setSnapshots((prev) => prev.filter((s) => s.id !== snapshot.id));
+    try {
+      await deleteSnapshot(snapshot.id);
+      setSnapshots((prev) => prev.filter((s) => s.id !== snapshot.id));
+      addToast('Snapshot deleted', 'success');
+    } catch {
+      addToast('Failed to delete snapshot', 'error');
+    }
   };
 
   const handleRestore = (snapshot: Snapshot) => {
@@ -115,12 +122,18 @@ export default function SnapshotsPanel({ roomId, onClose }: SnapshotsPanelProps)
           >
             {saving ? 'Saving...' : 'Save'}
           </button>
-          {saveSuccess && <span style={styles.success}>Snapshot saved!</span>}
         </div>
 
         <div style={styles.list}>
           {loading ? (
-            <p style={styles.empty}>Loading...</p>
+            <>
+              {[0, 1, 2].map((i) => (
+                <div key={i} style={styles.skeletonCard}>
+                  <div style={styles.skeletonLine} />
+                  <div style={{ ...styles.skeletonLine, width: '60%' }} />
+                </div>
+              ))}
+            </>
           ) : snapshots.length === 0 ? (
             <p style={styles.empty}>No snapshots yet. Save one above.</p>
           ) : (
@@ -217,10 +230,6 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '0.875rem',
     fontWeight: 500,
   },
-  success: {
-    fontSize: '0.8rem',
-    color: '#16a34a',
-  },
   list: {
     flex: 1,
     overflowY: 'auto',
@@ -234,6 +243,20 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '0.875rem',
     textAlign: 'center',
     marginTop: '1rem',
+  },
+  skeletonCard: {
+    border: '1px solid #e5e7eb',
+    borderRadius: '8px',
+    padding: '0.75rem',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.5rem',
+    animation: 'pulse 1.5s ease-in-out infinite',
+  },
+  skeletonLine: {
+    height: '12px',
+    borderRadius: '4px',
+    backgroundColor: '#f3f4f6',
   },
   card: {
     border: '1px solid #e5e7eb',

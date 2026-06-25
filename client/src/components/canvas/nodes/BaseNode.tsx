@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { useShallow } from 'zustand/react/shallow';
 import type { NodeData } from '../../../types';
@@ -13,7 +13,7 @@ interface BaseNodeProps {
   selected: boolean;
 }
 
-export default function BaseNode({ id, data, selected }: BaseNodeProps) {
+function BaseNode({ id, data, selected }: BaseNodeProps) {
   const config = NODE_CONFIG[data.nodeType];
 
   // useShallow prevents infinite loop by doing shallow equality
@@ -30,8 +30,7 @@ export default function BaseNode({ id, data, selected }: BaseNodeProps) {
     ),
   );
 
-  const highlightedNodeId = useCanvasStore((state) => state.highlightedNodeId);
-  const isHighlighted = highlightedNodeId === id;
+  const isHighlighted = useCanvasStore((state) => state.highlightedNodeId === id);
 
   const [isEditing, setIsEditing] = useState(false);
   const [labelInput, setLabelInput] = useState(data.label);
@@ -301,3 +300,5 @@ const styles: Record<string, React.CSSProperties> = {
     borderTop: '4px solid #1f2937',
   },
 };
+
+export default memo(BaseNode);

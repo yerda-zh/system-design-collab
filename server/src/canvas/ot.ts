@@ -1,5 +1,6 @@
 import { CanvasStateData } from './types/canvas.types';
 import { CanvasOperation } from './types/operations';
+import { sanitizeText } from '../common/utils/sanitize';
 
 /**
  * Applies a canvas operation to a state object.
@@ -57,7 +58,7 @@ export function applyOperation(
       const node = nodes.find((n) => n.id === operation.nodeId);
       if (!node) break;
       // Last write wins
-      node.data.label = operation.label;
+      node.data.label = sanitizeText(operation.label);
       break;
     }
 
