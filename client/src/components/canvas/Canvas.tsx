@@ -306,9 +306,10 @@ function CanvasInner({ onEmitOperation, onCursorMove, onOpenComments }: CanvasIn
         onDragOver={handleDragOver}
         onDrop={handleDrop}
         deleteKeyCode={['Backspace', 'Delete']}
+        proOptions={{ hideAttribution: true }}
         fitView
       >
-        <Background color="#e2e8f0" gap={20} size={1} />
+        <Background color="#E2E8F0" gap={20} size={1.5} />
         <Controls style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.1)', borderRadius: '8px', border: '1px solid #e5e7eb', overflow: 'hidden' }} />
         <MiniMap
           nodeColor={nodeColor}

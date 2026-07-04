@@ -31,6 +31,6 @@ export class Comment {
   @Column({ nullable: true, type: 'varchar' })
   parentId: string | null;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
 }

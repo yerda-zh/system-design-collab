@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { X, RefreshCw } from 'lucide-react';
 import { isAxiosError } from 'axios';
 import { getInviteToken, getInviteTokenPublic, regenerateInvite } from '../../api/rooms';
 import { useToastStore } from '../../store/toastStore';
@@ -13,6 +14,9 @@ export default function SharePopup({ roomId, isOwner, onClose }: SharePopupProps
   const [inviteToken, setInviteToken] = useState<string | null>(null);
   const [regenerating, setRegenerating] = useState(false);
   const [loadError, setLoadError] = useState('');
+  const [isCloseHovered, setIsCloseHovered] = useState(false);
+  const [isCopyHovered, setIsCopyHovered] = useState(false);
+  const [isRegenerateHovered, setIsRegenerateHovered] = useState(false);
   const popupRef = useRef<HTMLDivElement>(null);
   const addToast = useToastStore((s) => s.addToast);
 
@@ -77,10 +81,14 @@ export default function SharePopup({ roomId, isOwner, onClose }: SharePopupProps
       <div ref={popupRef} style={styles.popup}>
         <div style={styles.header}>
           <h3 style={styles.title}>Share Canvas</h3>
-          <button style={styles.closeBtn} onClick={onClose} aria-label="Close">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <path d="M18 6L6 18M6 6l12 12" />
-            </svg>
+          <button
+            style={{ ...styles.closeBtn, color: isCloseHovered ? '#374151' : '#9ca3af', backgroundColor: isCloseHovered ? '#f3f4f6' : 'transparent' }}
+            onClick={onClose}
+            onMouseEnter={() => setIsCloseHovered(true)}
+            onMouseLeave={() => setIsCloseHovered(false)}
+            aria-label="Close"
+          >
+            <X size={16} />
           </button>
         </div>
 
@@ -98,7 +106,12 @@ export default function SharePopup({ roomId, isOwner, onClose }: SharePopupProps
                 readOnly
                 onClick={(e) => (e.target as HTMLInputElement).select()}
               />
-              <button style={styles.copyBtn} onClick={handleCopy}>
+              <button
+                style={{ ...styles.copyBtn, ...(isCopyHovered ? { background: 'linear-gradient(135deg, #6D28D9 0%, #5B21B6 100%)' } : {}) }}
+                onClick={handleCopy}
+                onMouseEnter={() => setIsCopyHovered(true)}
+                onMouseLeave={() => setIsCopyHovered(false)}
+              >
                 Copy
               </button>
             </div>
@@ -109,11 +122,17 @@ export default function SharePopup({ roomId, isOwner, onClose }: SharePopupProps
 
             {isOwner && (
               <button
-                style={styles.regenerateBtn}
+                style={{
+                  ...styles.regenerateBtn,
+                  ...(!regenerating && isRegenerateHovered ? { border: '1px solid #d1d5db', color: '#374151', backgroundColor: '#f9fafb' } : {}),
+                  ...(regenerating ? { opacity: 0.6, cursor: 'not-allowed' } : {}),
+                }}
                 onClick={handleRegenerate}
                 disabled={regenerating}
+                onMouseEnter={() => setIsRegenerateHovered(true)}
+                onMouseLeave={() => setIsRegenerateHovered(false)}
               >
-                {regenerating ? 'Regenerating...' : '↻ Regenerate link'}
+                {regenerating ? 'Regenerating...' : <><RefreshCw size={14} /> Regenerate link</>}
               </button>
             )}
           </>
@@ -137,7 +156,7 @@ const styles: Record<string, React.CSSProperties> = {
   popup: {
     backgroundColor: 'white',
     borderRadius: '12px',
-    boxShadow: '0 4px 16px rgba(0,0,0,0.12), 0 20px 48px rgba(0,0,0,0.08)',
+    boxShadow: '0 20px 60px rgba(0,0,0,0.15), 0 4px 20px rgba(0,0,0,0.1)',
     padding: '1.5rem',
     width: '420px',
     maxWidth: '90vw',
@@ -148,6 +167,8 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: '1.25rem',
+    paddingBottom: '1rem',
+    borderBottom: '1px solid #F3F4F6',
   },
   title: {
     margin: 0,
@@ -166,7 +187,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    transition: 'color 0.15s, border-color 0.15s',
+    transition: 'color 0.15s, border-color 0.15s, background-color 0.15s',
     lineHeight: 1,
   },
   label: {
@@ -195,7 +216,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   copyBtn: {
     padding: '0.5625rem 1rem',
-    backgroundColor: '#f97316',
+    background: 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)',
     color: 'white',
     border: 'none',
     borderRadius: '6px',
@@ -203,7 +224,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '0.8125rem',
     fontWeight: 600,
     whiteSpace: 'nowrap' as const,
-    transition: 'background-color 0.15s',
+    transition: 'background 0.15s ease',
   },
   hint: {
     margin: '0 0 1rem',
@@ -212,7 +233,7 @@ const styles: Record<string, React.CSSProperties> = {
     lineHeight: 1.5,
   },
   regenerateBtn: {
-    background: 'none',
+    backgroundColor: 'transparent',
     border: '1px solid #e5e7eb',
     borderRadius: '6px',
     padding: '0.5rem 0.75rem',
@@ -221,6 +242,10 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#6b7280',
     width: '100%',
     transition: 'border-color 0.15s, color 0.15s',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '0.4rem',
   },
   loading: { color: '#9ca3af', fontSize: '0.875rem' },
   error: { color: '#dc2626', fontSize: '0.85rem', margin: '0 0 0.75rem' },

@@ -3,6 +3,7 @@ import {
   Post,
   Get,
   Patch,
+  Delete,
   Body,
   Param,
   UseGuards,
@@ -10,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { RoomsService } from './rooms.service';
+import { CanvasGateway } from '../canvas/canvas.gateway';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { UpdateRoomNameDto } from './dto/update-room-name.dto';
 
@@ -25,7 +27,10 @@ interface AuthenticatedRequest {
 @Controller('rooms')
 @UseGuards(AuthGuard('jwt'))
 export class RoomsController {
-    constructor(private readonly roomsService: RoomsService) {}
+    constructor(
+        private readonly roomsService: RoomsService,
+        private readonly canvasGateway: CanvasGateway,
+    ) {}
 
     // POST /rooms — create a new room
     @Post()
@@ -84,5 +89,15 @@ export class RoomsController {
         @Request() req: AuthenticatedRequest,
     ) {
         return this.roomsService.updateRoomName(id, req.user.id, dto.name);
+    }
+
+    // DELETE /rooms/:id — permanently delete room (owner only)
+    @Delete(':id')
+    async deleteRoom(@Param('id') id: string, @Request() req: AuthenticatedRequest) {
+        // Broadcast before deleting so connected users are still in the Socket.IO room
+        // and receive the event before the room disappears from the DB
+        await this.roomsService.verifyOwner(id, req.user.id);
+        this.canvasGateway.broadcastRoomDeleted(id);
+        await this.roomsService.deleteRoom(id, req.user.id);
     }
 }

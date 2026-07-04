@@ -8,8 +8,12 @@ import { Repository } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
 import { Room } from './room.entity';
 import { RoomMember } from './room-member.entity';
+import { Comment } from '../database/entities/comment.entity';
+import { Snapshot } from '../database/entities/snapshot.entity';
+import { CanvasState } from '../database/entities/canvas-state.entity';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { sanitizeText } from '../common/utils/sanitize';
+import { RedisService } from '../redis/redis.service';
 
 @Injectable()
 export class RoomsService {
@@ -18,6 +22,13 @@ export class RoomsService {
         private roomsRepository: Repository<Room>,
         @InjectRepository(RoomMember)
         private roomMembersRepository: Repository<RoomMember>,
+        @InjectRepository(Comment)
+        private commentsRepository: Repository<Comment>,
+        @InjectRepository(Snapshot)
+        private snapshotsRepository: Repository<Snapshot>,
+        @InjectRepository(CanvasState)
+        private canvasStateRepository: Repository<CanvasState>,
+        private readonly redisService: RedisService,
     ) {}
 
     async createRoom(dto: CreateRoomDto, userId: string) {
@@ -170,5 +181,36 @@ export class RoomsService {
         room.name = sanitizeText(name);
         await this.roomsRepository.save(room);
         return room;
+    }
+
+    async roomExists(roomId: string): Promise<boolean> {
+        const room = await this.roomsRepository.findOne({ where: { id: roomId } });
+        return !!room;
+    }
+
+    async verifyOwner(roomId: string, userId: string): Promise<void> {
+        const room = await this.roomsRepository.findOne({ where: { id: roomId } });
+        if (!room) throw new NotFoundException('Room not found');
+        if (room.ownerId !== userId) throw new ForbiddenException('Only the owner can delete this canvas');
+    }
+
+    async deleteRoom(roomId: string, userId: string): Promise<void> {
+        const room = await this.roomsRepository.findOne({ where: { id: roomId } });
+
+        if (!room) {
+            throw new NotFoundException('Room not found');
+        }
+
+        if (room.ownerId !== userId) {
+            throw new ForbiddenException('Only the owner can delete this canvas');
+        }
+
+        // No DB-level cascades exist — delete in FK-safe order
+        await this.commentsRepository.delete({ roomId });
+        await this.snapshotsRepository.delete({ roomId });
+        await this.canvasStateRepository.delete({ roomId });
+        await this.roomMembersRepository.delete({ roomId });
+        await this.roomsRepository.delete(roomId);
+        await this.redisService.deleteRoomKeys(roomId);
     }
 }

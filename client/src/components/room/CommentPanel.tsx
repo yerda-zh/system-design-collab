@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { X, CornerDownRight, Trash2 } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { useCommentStore } from '../../store/commentStore';
 import { useAuthStore } from '../../store/authStore';
@@ -68,6 +69,18 @@ export default function CommentPanel({
   const [replyBody, setReplyBody] = useState('');
   const [replySubmitting, setReplySubmitting] = useState(false);
 
+  const [isCloseHovered, setIsCloseHovered] = useState(false);
+  const [isSubmitHovered, setIsSubmitHovered] = useState(false);
+  const [isReplySubmitHovered, setIsReplySubmitHovered] = useState(false);
+  const [hoveredReplyId, setHoveredReplyId] = useState<string | null>(null);
+  const [hoveredDeleteId, setHoveredDeleteId] = useState<string | null>(null);
+  const [hoveredCancelId, setHoveredCancelId] = useState<string | null>(null);
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick((n) => n + 1), 30_000);
+    return () => clearInterval(id);
+  }, []);
+
   const topLevel = comments.filter((c) => c.parentId === null);
 
   const getReplies = (parentId: string): Comment[] =>
@@ -112,10 +125,14 @@ export default function CommentPanel({
             </svg>
             <span style={styles.title}>Comments</span>
           </div>
-          <button style={styles.closeBtn} onClick={onClose} aria-label="Close">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <path d="M18 6L6 18M6 6l12 12" />
-            </svg>
+          <button
+            style={{ ...styles.closeBtn, color: isCloseHovered ? '#374151' : '#9ca3af', backgroundColor: isCloseHovered ? '#f3f4f6' : 'transparent' }}
+            onClick={onClose}
+            onMouseEnter={() => setIsCloseHovered(true)}
+            onMouseLeave={() => setIsCloseHovered(false)}
+            aria-label="Close"
+          >
+            <X size={16} />
           </button>
         </div>
 
@@ -133,20 +150,30 @@ export default function CommentPanel({
                   <p style={styles.body}>{comment.body}</p>
                   <div style={styles.commentActions}>
                     <button
-                      style={styles.replyBtn}
+                      style={{
+                        ...styles.replyBtn,
+                        ...(hoveredReplyId === comment.id ? { color: '#5B21B6' } : {}),
+                      }}
                       onClick={() => {
                         setReplyingTo(replyingTo === comment.id ? null : comment.id);
                         setReplyBody('');
                       }}
+                      onMouseEnter={() => setHoveredReplyId(comment.id)}
+                      onMouseLeave={() => setHoveredReplyId(null)}
                     >
-                      Reply
+                      <CornerDownRight size={13} /> Reply
                     </button>
                     {user && comment.authorId === user.id && (
                       <button
-                        style={styles.deleteBtn}
+                        style={{
+                          ...styles.deleteBtn,
+                          ...(hoveredDeleteId === comment.id ? { color: '#b91c1c', backgroundColor: '#fef2f2' } : {}),
+                        }}
                         onClick={() => handleDelete(comment.id)}
+                        onMouseEnter={() => setHoveredDeleteId(comment.id)}
+                        onMouseLeave={() => setHoveredDeleteId(null)}
                       >
-                        Delete
+                        <Trash2 size={13} />
                       </button>
                     )}
                   </div>
@@ -161,10 +188,15 @@ export default function CommentPanel({
                     <p style={styles.body}>{reply.body}</p>
                     {user && reply.authorId === user.id && (
                       <button
-                        style={styles.deleteBtn}
+                        style={{
+                          ...styles.deleteBtn,
+                          ...(hoveredDeleteId === reply.id ? { color: '#b91c1c', backgroundColor: '#fef2f2' } : {}),
+                        }}
                         onClick={() => handleDelete(reply.id)}
+                        onMouseEnter={() => setHoveredDeleteId(reply.id)}
+                        onMouseLeave={() => setHoveredDeleteId(null)}
                       >
-                        Delete
+                        <Trash2 size={13} />
                       </button>
                     )}
                   </div>
@@ -181,15 +213,28 @@ export default function CommentPanel({
                     />
                     <div style={styles.replyActions}>
                       <button
-                        style={styles.cancelBtn}
+                        style={{
+                          ...styles.cancelBtn,
+                          ...(hoveredCancelId === comment.id ? { backgroundColor: '#f9fafb', border: '1px solid #d1d5db' } : {}),
+                        }}
                         onClick={() => { setReplyingTo(null); setReplyBody(''); }}
+                        onMouseEnter={() => setHoveredCancelId(comment.id)}
+                        onMouseLeave={() => setHoveredCancelId(null)}
                       >
                         Cancel
                       </button>
                       <button
-                        style={{ ...styles.submitBtn, opacity: replySubmitting ? 0.6 : 1 }}
+                        style={{
+                          ...styles.submitBtn,
+                          opacity: replySubmitting ? 0.6 : 1,
+                          ...(isReplySubmitHovered && !replySubmitting
+                            ? { background: 'linear-gradient(135deg, #6D28D9 0%, #5B21B6 100%)' }
+                            : {}),
+                        }}
                         onClick={() => handleReply(comment.id)}
                         disabled={replySubmitting}
+                        onMouseEnter={() => setIsReplySubmitHovered(true)}
+                        onMouseLeave={() => setIsReplySubmitHovered(false)}
                       >
                         {replySubmitting ? 'Sending...' : 'Submit'}
                       </button>
@@ -210,9 +255,17 @@ export default function CommentPanel({
             rows={3}
           />
           <button
-            style={{ ...styles.submitBtn, opacity: submitting ? 0.6 : 1 }}
+            style={{
+              ...styles.submitBtn,
+              opacity: submitting ? 0.6 : 1,
+              ...(isSubmitHovered && !submitting
+                ? { background: 'linear-gradient(135deg, #6D28D9 0%, #5B21B6 100%)' }
+                : {}),
+            }}
             onClick={handleSubmit}
             disabled={submitting}
+            onMouseEnter={() => setIsSubmitHovered(true)}
+            onMouseLeave={() => setIsSubmitHovered(false)}
           >
             {submitting ? 'Submitting...' : 'Submit'}
           </button>
@@ -229,7 +282,7 @@ const styles: Record<string, React.CSSProperties> = {
     right: 0,
     bottom: 0,
     left: 0,
-    zIndex: 110,
+    zIndex: 1100,
     pointerEvents: 'none',
   },
   panel: {
@@ -239,7 +292,7 @@ const styles: Record<string, React.CSSProperties> = {
     bottom: 0,
     width: '340px',
     backgroundColor: 'white',
-    boxShadow: '-4px 0 24px rgba(0,0,0,0.1), -1px 0 0 #e5e7eb',
+    boxShadow: '0 20px 60px rgba(0,0,0,0.15), 0 4px 20px rgba(0,0,0,0.1)',
     display: 'flex',
     flexDirection: 'column',
     pointerEvents: 'all',
@@ -249,7 +302,7 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: '0.875rem 1rem',
-    borderBottom: '1px solid #e5e7eb',
+    borderBottom: '1px solid #F3F4F6',
     flexShrink: 0,
   },
   headerInner: {
@@ -273,7 +326,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    transition: 'color 0.15s',
+    transition: 'color 0.15s, background-color 0.15s',
   },
   list: {
     flex: 1,
@@ -299,7 +352,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   replyCard: {
     marginLeft: '1rem',
-    borderLeft: '2px solid #fed7aa',
+    borderLeft: '2px solid #EDE9FE',
     paddingLeft: '0.75rem',
     display: 'flex',
     flexDirection: 'column',
@@ -337,17 +390,24 @@ const styles: Record<string, React.CSSProperties> = {
     border: 'none',
     cursor: 'pointer',
     fontSize: '0.75rem',
-    color: '#f97316',
+    color: '#7C3AED',
     padding: 0,
     fontWeight: 500,
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.25rem',
   },
   deleteBtn: {
-    background: 'none',
+    backgroundColor: 'transparent',
     border: 'none',
     cursor: 'pointer',
     fontSize: '0.75rem',
     color: '#dc2626',
-    padding: 0,
+    padding: '2px 4px',
+    borderRadius: '4px',
+    display: 'inline-flex',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
   },
   replyInput: {
     marginLeft: '1rem',
@@ -369,6 +429,7 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
     fontSize: '0.8rem',
     fontWeight: 500,
+    outline: 'none',
   },
   inputArea: {
     padding: '0.75rem',
@@ -395,7 +456,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   submitBtn: {
     padding: '0.5rem 1rem',
-    backgroundColor: '#f97316',
+    background: 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)',
     color: 'white',
     border: 'none',
     borderRadius: '6px',
@@ -403,6 +464,6 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '0.875rem',
     fontWeight: 600,
     alignSelf: 'flex-end',
-    transition: 'background-color 0.15s',
+    transition: 'background 0.15s ease',
   },
 };

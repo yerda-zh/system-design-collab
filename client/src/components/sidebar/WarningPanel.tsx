@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ChevronDown, ChevronRight, CheckCircle2 } from 'lucide-react';
 import { useWarningStore } from '../../store/warningStore';
 import type { Warning, WarningSeverity } from '../../types/warnings';
 
@@ -28,7 +29,6 @@ export default function WarningPanel({ onSelectNode }: WarningPanelProps) {
 
   return (
     <div style={styles.container}>
-      {/* Header — always visible, toggles the panel */}
       <button
         style={styles.header}
         onClick={() => setIsExpanded((prev) => !prev)}
@@ -50,15 +50,14 @@ export default function WarningPanel({ onSelectNode }: WarningPanelProps) {
             </div>
           )}
         </div>
-        <span style={styles.chevron}>{isExpanded ? '▾' : '▸'}</span>
+        {isExpanded ? <ChevronDown size={14} color="#475569" /> : <ChevronRight size={14} color="#475569" />}
       </button>
 
-      {/* Warning list */}
       {isExpanded && (
         <div style={styles.list}>
           {warnings.length === 0 ? (
             <div style={styles.emptyState}>
-              <div style={styles.emptyCheck}>✓</div>
+              <CheckCircle2 size={20} color="#16a34a" />
               <p style={styles.emptyTitle}>Architecture looks good</p>
               <p style={styles.emptySubtitle}>No issues detected</p>
             </div>
@@ -87,23 +86,13 @@ function WarningItem({ warning, onClick }: WarningItemProps) {
 
   return (
     <button style={styles.item} onClick={onClick}>
-      <div
-        style={{
-          ...styles.severityBar,
-          backgroundColor: config.color,
-        }}
-      />
+      <div style={{ ...styles.severityBar, backgroundColor: config.color }} />
       <div style={styles.itemContent}>
         <p style={styles.itemTitle}>
           {WARNING_TITLES[warning.type] ?? warning.type}
         </p>
         <p style={styles.itemMessage}>{warning.message}</p>
-        <span
-          style={{
-            ...styles.severityLabel,
-            color: config.color,
-          }}
-        >
+        <span style={{ ...styles.severityLabel, color: config.color }}>
           {config.label}
         </span>
       </div>
@@ -113,8 +102,8 @@ function WarningItem({ warning, onClick }: WarningItemProps) {
 
 const styles: Record<string, React.CSSProperties> = {
   container: {
-    borderTop: '1px solid #e5e7eb',
-    backgroundColor: 'white',
+    borderTop: '1px solid #1E293B',
+    backgroundColor: '#0F172A',
     flexShrink: 0,
   },
   header: {
@@ -134,11 +123,11 @@ const styles: Record<string, React.CSSProperties> = {
     gap: '0.5rem',
   },
   headerTitle: {
-    fontSize: '0.75rem',
+    fontSize: '0.65rem',
     fontWeight: 700,
-    color: '#374151',
+    color: '#475569',
     textTransform: 'uppercase' as const,
-    letterSpacing: '0.06em',
+    letterSpacing: '0.1em',
   },
   counts: {
     display: 'flex',
@@ -152,14 +141,10 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: '10px',
     lineHeight: '16px',
   },
-  chevron: {
-    fontSize: '0.65rem',
-    color: '#9ca3af',
-  },
   list: {
     maxHeight: '220px',
     overflowY: 'auto',
-    borderTop: '1px solid #f3f4f6',
+    borderTop: '1px solid #1E293B',
   },
   emptyState: {
     display: 'flex',
@@ -167,19 +152,6 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: '0.25rem',
     padding: '0.875rem 1rem',
-  },
-  emptyCheck: {
-    width: '28px',
-    height: '28px',
-    borderRadius: '50%',
-    backgroundColor: '#f0fdf4',
-    border: '1px solid #bbf7d0',
-    color: '#16a34a',
-    fontSize: '0.9rem',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: '0.2rem',
   },
   emptyTitle: {
     fontSize: '0.78rem',
@@ -189,7 +161,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   emptySubtitle: {
     fontSize: '0.7rem',
-    color: '#9ca3af',
+    color: '#475569',
     margin: 0,
   },
   item: {
@@ -198,7 +170,7 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'stretch',
     background: 'none',
     border: 'none',
-    borderBottom: '1px solid #f9fafb',
+    borderBottom: '1px solid #1E293B',
     cursor: 'pointer',
     textAlign: 'left' as const,
     padding: 0,
@@ -216,12 +188,12 @@ const styles: Record<string, React.CSSProperties> = {
     margin: '0 0 0.2rem',
     fontSize: '0.775rem',
     fontWeight: 600,
-    color: '#1f2937',
+    color: '#F1F5F9',
   },
   itemMessage: {
     margin: '0 0 0.25rem',
     fontSize: '0.7rem',
-    color: '#6b7280',
+    color: '#64748B',
     lineHeight: 1.4,
   },
   severityLabel: {

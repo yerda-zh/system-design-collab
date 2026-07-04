@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { Layers } from 'lucide-react';
 import api from '../api/http';
 import { useAuthStore } from '../store/authStore';
 
@@ -11,13 +12,13 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [focusedField, setFocusedField] = useState<string | null>(null);
+  const [isButtonHovered, setIsButtonHovered] = useState(false);
 
   const handleLogin = async () => {
     try {
       const res = await api.post('/auth/login', { email, password });
       setAuth(res.data.accessToken, res.data.user);
 
-      // If there's a redirect param (e.g. from invite link), go there
       const params = new URLSearchParams(window.location.search);
       const redirect = params.get('redirect');
       navigate(redirect ?? '/dashboard');
@@ -28,20 +29,13 @@ export default function LoginPage() {
 
   return (
     <div style={styles.container}>
-      <div style={styles.card}>
-        {/* Brand mark */}
-        <div style={styles.brand}>
-          <div style={styles.logoMark}>
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <rect x="2" y="2" width="7" height="7" rx="1.5" fill="white" />
-              <rect x="11" y="2" width="7" height="7" rx="1.5" fill="white" fillOpacity="0.7" />
-              <rect x="2" y="11" width="7" height="7" rx="1.5" fill="white" fillOpacity="0.7" />
-              <rect x="11" y="11" width="7" height="7" rx="1.5" fill="white" fillOpacity="0.5" />
-            </svg>
-          </div>
-          <span style={styles.brandName}>System Design Collab</span>
-        </div>
+      {/* Brand above card */}
+      <div style={styles.brand}>
+        <Layers size={24} color="#A78BFA" />
+        <span style={styles.brandName}>System Design Collab</span>
+      </div>
 
+      <div style={styles.card}>
         <div style={styles.headingGroup}>
           <h1 style={styles.heading}>Welcome back</h1>
           <p style={styles.subheading}>Sign in to your account to continue</p>
@@ -63,8 +57,8 @@ export default function LoginPage() {
             id="login-email"
             style={{
               ...styles.input,
-              borderColor: focusedField === 'email' ? '#f97316' : '#e5e7eb',
-              boxShadow: focusedField === 'email' ? '0 0 0 3px rgba(249,115,22,0.12)' : 'none',
+              borderColor: focusedField === 'email' ? '#7C3AED' : '#e5e7eb',
+              boxShadow: focusedField === 'email' ? '0 0 0 3px rgba(124, 58, 237, 0.1)' : 'none',
             }}
             type="email"
             placeholder="you@example.com"
@@ -81,8 +75,8 @@ export default function LoginPage() {
             id="login-password"
             style={{
               ...styles.input,
-              borderColor: focusedField === 'password' ? '#f97316' : '#e5e7eb',
-              boxShadow: focusedField === 'password' ? '0 0 0 3px rgba(249,115,22,0.12)' : 'none',
+              borderColor: focusedField === 'password' ? '#7C3AED' : '#e5e7eb',
+              boxShadow: focusedField === 'password' ? '0 0 0 3px rgba(124, 58, 237, 0.1)' : 'none',
             }}
             type="password"
             placeholder="••••••••"
@@ -94,7 +88,18 @@ export default function LoginPage() {
           />
         </div>
 
-        <button style={styles.button} onClick={handleLogin}>
+        <button
+          style={{
+            ...styles.button,
+            ...(isButtonHovered ? {
+              boxShadow: '0 6px 16px rgba(124, 58, 237, 0.45)',
+              transform: 'translateY(-1px)',
+            } : {}),
+          }}
+          onClick={handleLogin}
+          onMouseEnter={() => setIsButtonHovered(true)}
+          onMouseLeave={() => setIsButtonHovered(false)}
+        >
           Sign in
         </button>
 
@@ -109,45 +114,37 @@ export default function LoginPage() {
 const styles: Record<string, React.CSSProperties> = {
   container: {
     display: 'flex',
+    flexDirection: 'column',
     justifyContent: 'center',
     alignItems: 'center',
     minHeight: '100vh',
-    backgroundColor: '#f8fafc',
+    background: 'linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #0F172A 100%)',
     padding: '1rem',
+    gap: '1.5rem',
+  },
+  brand: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '0.5rem',
+  },
+  brandName: {
+    fontSize: '1.1rem',
+    fontWeight: 700,
+    color: '#A78BFA',
+    letterSpacing: '-0.01em',
   },
   card: {
     backgroundColor: 'white',
     padding: '2.5rem',
     borderRadius: '12px',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.08), 0 8px 24px rgba(0,0,0,0.06)',
+    boxShadow: '0 24px 64px rgba(0,0,0,0.4), 0 4px 16px rgba(0,0,0,0.2)',
     width: '100%',
     maxWidth: '400px',
     display: 'flex',
     flexDirection: 'column',
     gap: '1.25rem',
-    border: '1px solid #f1f5f9',
-  },
-  brand: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.6rem',
-    marginBottom: '0.25rem',
-  },
-  logoMark: {
-    width: '36px',
-    height: '36px',
-    borderRadius: '8px',
-    backgroundColor: '#f97316',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  brandName: {
-    fontSize: '0.95rem',
-    fontWeight: 600,
-    color: '#1f2937',
-    letterSpacing: '-0.01em',
+    border: '1px solid rgba(255,255,255,0.06)',
   },
   headingGroup: {
     display: 'flex',
@@ -198,14 +195,15 @@ const styles: Record<string, React.CSSProperties> = {
   },
   button: {
     padding: '0.6875rem 1rem',
-    backgroundColor: '#f97316',
+    background: 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)',
+    boxShadow: '0 4px 12px rgba(124, 58, 237, 0.35)',
     color: 'white',
     border: 'none',
     borderRadius: '6px',
     fontSize: '0.9375rem',
     fontWeight: 600,
     cursor: 'pointer',
-    transition: 'background-color 0.15s',
+    transition: 'box-shadow 0.15s ease, transform 0.15s ease',
     marginTop: '0.25rem',
   },
   link: {

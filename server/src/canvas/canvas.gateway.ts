@@ -131,7 +131,15 @@ export class CanvasGateway implements OnGatewayConnection, OnGatewayDisconnect {
     try {
       await this.roomsService.getRoom(roomId, userId);
     } catch {
-      socket.emit(WS_EVENTS.ERROR, { message: 'Access denied to this room' });
+      // Distinguish deleted room from genuine access denial:
+      // cascade delete removes room_members before the room row, so getRoom
+      // throws ForbiddenException (not NotFoundException) for deleted rooms.
+      const exists = await this.roomsService.roomExists(roomId);
+      if (!exists) {
+        socket.emit(WS_EVENTS.ROOM_NOT_FOUND);
+      } else {
+        socket.emit(WS_EVENTS.ERROR, { message: 'Access denied to this room' });
+      }
       return;
     }
 
@@ -324,6 +332,10 @@ export class CanvasGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   broadcastCommentDeleted(roomId: string, commentId: string): void {
     this.server.to(roomId).emit(WS_EVENTS.COMMENT_DELETED, { commentId });
+  }
+
+  broadcastRoomDeleted(roomId: string): void {
+    this.server.to(roomId).emit(WS_EVENTS.ROOM_DELETED, { roomId });
   }
 
   private extractToken(socket: Socket): string | null {

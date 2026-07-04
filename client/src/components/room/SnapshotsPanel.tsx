@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { X, RotateCcw, Trash2 } from 'lucide-react';
 import type { Node, Edge } from '@xyflow/react';
 import type { NodeData, Snapshot } from '../../types';
 import { saveSnapshot, getSnapshots, deleteSnapshot } from '../../api/canvas';
@@ -19,6 +20,10 @@ export default function SnapshotsPanel({ roomId, onClose }: SnapshotsPanelProps)
   const [loading, setLoading] = useState(true);
   const [nameInput, setNameInput] = useState('');
   const [saving, setSaving] = useState(false);
+
+  const [isSaveHovered, setIsSaveHovered] = useState(false);
+  const [isCloseHovered, setIsCloseHovered] = useState(false);
+  const [hoveredSnap, setHoveredSnap] = useState<{ id: string; action: 'restore' | 'delete' } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -108,10 +113,14 @@ export default function SnapshotsPanel({ roomId, onClose }: SnapshotsPanelProps)
             </svg>
             <span style={styles.title}>Snapshots</span>
           </div>
-          <button style={styles.closeBtn} onClick={onClose} aria-label="Close">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <path d="M18 6L6 18M6 6l12 12" />
-            </svg>
+          <button
+            style={{ ...styles.closeBtn, color: isCloseHovered ? '#374151' : '#9ca3af', backgroundColor: isCloseHovered ? '#f3f4f6' : 'transparent' }}
+            onClick={onClose}
+            onMouseEnter={() => setIsCloseHovered(true)}
+            onMouseLeave={() => setIsCloseHovered(false)}
+            aria-label="Close"
+          >
+            <X size={16} />
           </button>
         </div>
 
@@ -125,9 +134,15 @@ export default function SnapshotsPanel({ roomId, onClose }: SnapshotsPanelProps)
             onKeyDown={(e) => { if (e.key === 'Enter') handleSave(); }}
           />
           <button
-            style={{ ...styles.saveBtn, opacity: saving ? 0.6 : 1 }}
+            style={{
+              ...styles.saveBtn,
+              opacity: saving ? 0.6 : 1,
+              ...(isSaveHovered && !saving ? { background: 'linear-gradient(135deg, #6D28D9 0%, #5B21B6 100%)' } : {}),
+            }}
             onClick={handleSave}
             disabled={saving}
+            onMouseEnter={() => setIsSaveHovered(true)}
+            onMouseLeave={() => setIsSaveHovered(false)}
           >
             {saving ? 'Saving...' : 'Save'}
           </button>
@@ -154,16 +169,30 @@ export default function SnapshotsPanel({ roomId, onClose }: SnapshotsPanelProps)
                 </div>
                 <div style={styles.cardActions}>
                   <button
-                    style={styles.restoreBtn}
+                    style={{
+                      ...styles.restoreBtn,
+                      ...(hoveredSnap?.id === snapshot.id && hoveredSnap.action === 'restore'
+                        ? { background: 'linear-gradient(135deg, #6D28D9 0%, #5B21B6 100%)' }
+                        : {}),
+                    }}
                     onClick={() => handleRestore(snapshot)}
+                    onMouseEnter={() => setHoveredSnap({ id: snapshot.id, action: 'restore' })}
+                    onMouseLeave={() => setHoveredSnap(null)}
                   >
-                    Restore
+                    <RotateCcw size={13} /> Restore
                   </button>
                   <button
-                    style={styles.deleteBtn}
+                    style={{
+                      ...styles.deleteBtn,
+                      ...(hoveredSnap?.id === snapshot.id && hoveredSnap.action === 'delete'
+                        ? { backgroundColor: '#fef2f2' }
+                        : {}),
+                    }}
                     onClick={() => handleDelete(snapshot)}
+                    onMouseEnter={() => setHoveredSnap({ id: snapshot.id, action: 'delete' })}
+                    onMouseLeave={() => setHoveredSnap(null)}
                   >
-                    Delete
+                    <Trash2 size={13} /> Delete
                   </button>
                 </div>
               </div>
@@ -182,7 +211,7 @@ const styles: Record<string, React.CSSProperties> = {
     right: 0,
     bottom: 0,
     left: 0,
-    zIndex: 100,
+    zIndex: 1100,
     pointerEvents: 'none',
   },
   panel: {
@@ -192,7 +221,7 @@ const styles: Record<string, React.CSSProperties> = {
     bottom: 0,
     width: '320px',
     backgroundColor: 'white',
-    boxShadow: '-4px 0 24px rgba(0,0,0,0.1), -1px 0 0 #e5e7eb',
+    boxShadow: '0 20px 60px rgba(0,0,0,0.15), 0 4px 20px rgba(0,0,0,0.1)',
     display: 'flex',
     flexDirection: 'column',
     pointerEvents: 'all',
@@ -202,7 +231,7 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: '0.875rem 1rem',
-    borderBottom: '1px solid #e5e7eb',
+    borderBottom: '1px solid #F3F4F6',
     flexShrink: 0,
   },
   headerInner: {
@@ -226,7 +255,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    transition: 'color 0.15s',
+    transition: 'color 0.15s, background-color 0.15s',
   },
   saveSection: {
     padding: '0.875rem 1rem',
@@ -251,14 +280,14 @@ const styles: Record<string, React.CSSProperties> = {
   },
   saveBtn: {
     padding: '0.5rem 1rem',
-    backgroundColor: '#f97316',
+    background: 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)',
     color: 'white',
     border: 'none',
     borderRadius: '6px',
     cursor: 'pointer',
     fontSize: '0.875rem',
     fontWeight: 600,
-    transition: 'background-color 0.15s',
+    transition: 'background 0.15s ease',
   },
   list: {
     flex: 1,
@@ -319,14 +348,18 @@ const styles: Record<string, React.CSSProperties> = {
   restoreBtn: {
     flex: 1,
     padding: '0.375rem 0.5rem',
-    backgroundColor: '#f97316',
+    background: 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)',
     color: 'white',
     border: 'none',
     borderRadius: '6px',
     cursor: 'pointer',
     fontSize: '0.8rem',
     fontWeight: 600,
-    transition: 'background-color 0.15s',
+    transition: 'background 0.15s ease',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '0.375rem',
   },
   deleteBtn: {
     flex: 1,
@@ -338,6 +371,10 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
     fontSize: '0.8rem',
     fontWeight: 500,
-    transition: 'border-color 0.15s',
+    transition: 'background-color 0.15s ease',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '0.375rem',
   },
 };
