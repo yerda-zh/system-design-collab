@@ -1,4 +1,5 @@
-import { useState, memo } from 'react';
+import { useState, useRef, memo } from 'react';
+import { createPortal } from 'react-dom';
 import { Handle, Position } from '@xyflow/react';
 import { useShallow } from 'zustand/react/shallow';
 import type { NodeData } from '../../../types';
@@ -6,6 +7,16 @@ import { useWarningStore } from '../../../store/warningStore';
 import { useCommentStore } from '../../../store/commentStore';
 import { useCanvasStore } from '../../../store/canvasStore';
 import { NODE_CONFIG } from '../../../constants/nodeConfig';
+
+const NODE_TYPE_LABELS: Record<string, string> = {
+  database:     'Database',
+  cache:        'Cache',
+  queue:        'Queue',
+  service:      'Service',
+  loadBalancer: 'Load Balancer',
+  apiGateway:   'API Gateway',
+  cdn:          'CDN',
+};
 
 interface BaseNodeProps {
   id: string;
@@ -37,6 +48,10 @@ function BaseNode({ id, data, selected }: BaseNodeProps) {
   const [isTooltipVisible, setIsTooltipVisible] = useState(false);
   const [isCommentTooltipVisible, setIsCommentTooltipVisible] = useState(false);
 
+  const nodeRef = useRef<HTMLDivElement>(null);
+  const [tooltipAnchor, setTooltipAnchor] = useState<DOMRect | null>(null);
+  const [commentTooltipAnchor, setCommentTooltipAnchor] = useState<DOMRect | null>(null);
+
   const commitEdit = () => {
     const trimmed = labelInput.trim();
     if (!trimmed || trimmed === data.label) {
@@ -49,6 +64,7 @@ function BaseNode({ id, data, selected }: BaseNodeProps) {
 
   return (
     <div
+      ref={nodeRef}
       onDoubleClick={() => {
         setIsEditing(true);
         setLabelInput(data.label);
@@ -61,17 +77,17 @@ function BaseNode({ id, data, selected }: BaseNodeProps) {
           : hasWarnings
             ? '#d97706'
             : selected
-              ? '#f97316'
+              ? '#7C3AED'
               : config.color,
         boxShadow: isHighlighted
-          ? '0 0 0 4px rgba(249,115,22,0.3), 0 0 16px rgba(249,115,22,0.4)'
+          ? '0 0 0 4px rgba(124,58,237,0.3), 0 0 16px rgba(124,58,237,0.4)'
           : hasHighSeverity
             ? '0 0 0 2px rgba(220,38,38,0.3)'
             : hasWarnings
               ? '0 0 0 2px rgba(217,119,6,0.3)'
               : selected
-                ? '0 0 0 3px rgba(249,115,22,0.2)'
-                : '0 1px 4px rgba(0,0,0,0.1)',
+                ? '0 0 0 3px rgba(124,58,237,0.2)'
+                : '0 2px 8px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.06)',
       }}
     >
       {/* Target handles rendered first — sit below source handles */}
@@ -86,12 +102,12 @@ function BaseNode({ id, data, selected }: BaseNodeProps) {
       <Handle type="source" position={Position.Left}   id="left-source"   style={styles.handle} />
       <Handle type="source" position={Position.Right}  id="right-source"  style={styles.handle} />
 
-      <div style={{ ...styles.header, backgroundColor: config.color }}>
-        <span style={styles.icon}>{config.icon}</span>
-        <span style={styles.typeLabel}>{data.nodeType}</span>
+      <div style={{ ...styles.header, backgroundColor: config.color, backgroundImage: 'linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(0,0,0,0.05) 100%)' }}>
+        <config.Icon size={12} color="white" />
+        <span style={styles.typeLabel}>{NODE_TYPE_LABELS[data.nodeType] ?? data.nodeType}</span>
       </div>
 
-      <div style={styles.body}>
+      <div style={{ ...styles.body, borderBottom: selected ? '1.5px solid rgba(124,58,237,0.2)' : undefined }}>
         {isEditing ? (
           <input
             autoFocus
@@ -120,15 +136,25 @@ function BaseNode({ id, data, selected }: BaseNodeProps) {
             ...styles.badge,
             backgroundColor: hasHighSeverity ? '#dc2626' : '#d97706',
           }}
-          onMouseEnter={() => setIsTooltipVisible(true)}
-          onMouseLeave={() => setIsTooltipVisible(false)}
+          onMouseEnter={() => {
+            setIsTooltipVisible(true);
+            if (nodeRef.current) setTooltipAnchor(nodeRef.current.getBoundingClientRect());
+          }}
+          onMouseLeave={() => {
+            setIsTooltipVisible(false);
+            setTooltipAnchor(null);
+          }}
         >
           {warnings.length}
         </div>
       )}
 
-      {isTooltipVisible && hasWarnings && (
-        <div style={styles.tooltip}>
+      {isTooltipVisible && hasWarnings && tooltipAnchor && createPortal(
+        <div style={{
+          ...styles.tooltip,
+          bottom: window.innerHeight - tooltipAnchor.top + 6,
+          right: window.innerWidth - tooltipAnchor.right,
+        }}>
           {warnings.map((w) => (
             <div key={w.id} style={styles.tooltipRow}>
               <span style={{ color: w.severity === 'high' ? '#dc2626' : '#d97706' }}>●</span>
@@ -136,21 +162,32 @@ function BaseNode({ id, data, selected }: BaseNodeProps) {
             </div>
           ))}
           <div style={styles.tooltipArrow} />
-        </div>
+        </div>,
+        document.body
       )}
 
       {topLevelComments.length > 0 && (
         <div
           style={styles.commentBadge}
-          onMouseEnter={() => setIsCommentTooltipVisible(true)}
-          onMouseLeave={() => setIsCommentTooltipVisible(false)}
+          onMouseEnter={() => {
+            setIsCommentTooltipVisible(true);
+            if (nodeRef.current) setCommentTooltipAnchor(nodeRef.current.getBoundingClientRect());
+          }}
+          onMouseLeave={() => {
+            setIsCommentTooltipVisible(false);
+            setCommentTooltipAnchor(null);
+          }}
         >
           {topLevelComments.length}
         </div>
       )}
 
-      {isCommentTooltipVisible && topLevelComments.length > 0 && (
-        <div style={styles.commentTooltip}>
+      {isCommentTooltipVisible && topLevelComments.length > 0 && commentTooltipAnchor && createPortal(
+        <div style={{
+          ...styles.commentTooltip,
+          bottom: window.innerHeight - commentTooltipAnchor.top + 6,
+          left: commentTooltipAnchor.left,
+        }}>
           {topLevelComments.map((c) => (
             <div key={c.id} style={styles.tooltipRow}>
               <span style={{ color: '#2563eb' }}>●</span>
@@ -158,7 +195,8 @@ function BaseNode({ id, data, selected }: BaseNodeProps) {
             </div>
           ))}
           <div style={styles.commentTooltipArrow} />
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
@@ -166,7 +204,7 @@ function BaseNode({ id, data, selected }: BaseNodeProps) {
 
 const styles: Record<string, React.CSSProperties> = {
   node: {
-    width: '164px',
+    width: '170px',
     backgroundColor: 'white',
     border: '1.5px solid',
     borderRadius: '10px',
@@ -178,27 +216,26 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     gap: '0.375rem',
-    padding: '0.375rem 0.6rem',
+    padding: '0.3rem 0.6rem',
     borderRadius: '8px 8px 0 0',
     overflow: 'hidden',
   },
-  icon: { fontSize: '0.875rem' },
   typeLabel: {
     color: 'white',
-    fontSize: '0.65rem',
+    fontSize: '0.6rem',
     fontWeight: 700,
     textTransform: 'uppercase',
-    letterSpacing: '0.06em',
+    letterSpacing: '0.1em',
   },
   body: {
-    padding: '0.5rem 0.625rem 0.625rem',
+    padding: '0.6rem 0.7rem',
     cursor: 'text',
     borderTop: '1px solid rgba(0,0,0,0.06)',
   },
   label: {
     fontSize: '0.875rem',
     fontWeight: 500,
-    color: '#1f2937',
+    color: '#111827',
     lineHeight: 1.4,
   },
   labelInput: {
@@ -208,7 +245,7 @@ const styles: Record<string, React.CSSProperties> = {
     background: 'transparent',
     fontSize: '0.875rem',
     fontWeight: 500,
-    color: '#1f2937',
+    color: '#111827',
     padding: 0,
     fontFamily: 'inherit',
   },
@@ -236,10 +273,7 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'default',
   },
   tooltip: {
-    position: 'absolute',
-    bottom: '100%',
-    right: 0,
-    marginBottom: '6px',
+    position: 'fixed',
     backgroundColor: '#111827',
     color: 'white',
     borderRadius: '8px',
@@ -286,10 +320,7 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'default',
   },
   commentTooltip: {
-    position: 'absolute',
-    bottom: '100%',
-    left: 0,
-    marginBottom: '6px',
+    position: 'fixed',
     backgroundColor: '#111827',
     color: 'white',
     borderRadius: '8px',

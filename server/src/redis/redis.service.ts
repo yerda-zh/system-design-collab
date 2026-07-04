@@ -86,4 +86,8 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   async getActiveUsers(roomId: string): Promise<Record<string, string>> {
     return this.client.hgetall(this.ROOM_USERS_KEY(roomId));
   }
+
+  async deleteRoomKeys(roomId: string): Promise<void> {
+    await this.client.del(this.CANVAS_KEY(roomId), this.ROOM_USERS_KEY(roomId));
+  }
 }

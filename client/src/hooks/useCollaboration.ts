@@ -12,6 +12,7 @@ import type {
   OperationAckPayload,
 } from '../types/events';
 import { useNavigate } from 'react-router-dom';
+import { useToastStore } from '../store/toastStore';
 import { useWarningStore } from '../store/warningStore';
 import { useCommentStore } from '../store/commentStore';
 import { getComments } from '../api/comments';
@@ -59,6 +60,7 @@ export function useCollaboration(roomId: string) {
   );
 
   const navigate = useNavigate();
+  const addToast = useToastStore((s) => s.addToast);
 
   useEffect(() => {
     if (!user || !roomId) return;
@@ -103,6 +105,16 @@ export function useCollaboration(roomId: string) {
 
     const onCommentDeleted = (data: { commentId: string }) => {
       useCommentStore.getState().removeComment(data.commentId);
+    };
+
+    const onRoomDeleted = () => {
+      addToast('This canvas was deleted by its owner', 'error');
+      navigate('/dashboard');
+    };
+
+    const onRoomNotFound = () => {
+      addToast('This canvas no longer exists', 'error');
+      navigate('/dashboard');
     };
 
      const onWarningUpdate = (data: { warnings: Warning[] }) => {
@@ -222,6 +234,8 @@ export function useCollaboration(roomId: string) {
     socketService.on(WS_EVENTS.ERROR, onError as (...args: unknown[]) => void);
     socketService.on(WS_EVENTS.COMMENT_CREATED, onCommentCreated as (...args: unknown[]) => void);
     socketService.on(WS_EVENTS.COMMENT_DELETED, onCommentDeleted as (...args: unknown[]) => void);
+    socketService.on(WS_EVENTS.ROOM_DELETED, onRoomDeleted as (...args: unknown[]) => void);
+    socketService.on(WS_EVENTS.ROOM_NOT_FOUND, onRoomNotFound as (...args: unknown[]) => void);
 
     // Join the room
     socketService.emit(WS_EVENTS.JOIN_ROOM, {
@@ -242,6 +256,8 @@ export function useCollaboration(roomId: string) {
       socketService.off(WS_EVENTS.WARNING_UPDATE, onWarningUpdate as (...args: unknown[]) => void);
       socketService.off(WS_EVENTS.COMMENT_CREATED, onCommentCreated as (...args: unknown[]) => void);
       socketService.off(WS_EVENTS.COMMENT_DELETED, onCommentDeleted as (...args: unknown[]) => void);
+      socketService.off(WS_EVENTS.ROOM_DELETED, onRoomDeleted as (...args: unknown[]) => void);
+      socketService.off(WS_EVENTS.ROOM_NOT_FOUND, onRoomNotFound as (...args: unknown[]) => void);
       socketService.disconnect();
 
       useWarningStore.getState().setWarnings([]);
@@ -257,10 +273,10 @@ export function useCollaboration(roomId: string) {
       setConnected(false);
       setJoined(false);
     };
-  }, [roomId, user, setNodes, setEdges, 
-    setRevision, addNode, setActiveUsers, 
-    addActiveUser, removeActiveUser, updateCursor, 
-    removeCursor, setConnected, setJoined, logout, navigate]);
+  }, [roomId, user, setNodes, setEdges,
+    setRevision, addNode, setActiveUsers,
+    addActiveUser, removeActiveUser, updateCursor,
+    removeCursor, setConnected, setJoined, logout, navigate, addToast]);
 
   return { emitOperation, emitCursor };
 }

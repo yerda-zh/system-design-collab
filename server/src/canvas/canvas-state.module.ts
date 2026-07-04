@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CanvasState } from '../database/entities/canvas-state.entity';
 import { CanvasStateController } from './canvas-state.controller';
@@ -12,7 +12,7 @@ import { WarningsModule } from '../warnings/warnings.module';
 @Module({
   imports: [
     TypeOrmModule.forFeature([CanvasState]),
-    RoomsModule,
+    forwardRef(() => RoomsModule),
     AuthModule,
     WarningsModule,
   ],

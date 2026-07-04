@@ -49,3 +49,5 @@ export const updateRoomName = async (roomId: string, name: string): Promise<Room
   const res = await api.patch(`/rooms/${roomId}/name`, { name });
   return res.data;
 };
+
+export const deleteRoom = (roomId: string) => api.delete(`/rooms/${roomId}`);

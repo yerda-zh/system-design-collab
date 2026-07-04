@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import { Share2, History, Save } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Canvas from '../components/canvas/Canvas';
 import ComponentLibrary from '../components/sidebar/ComponentLibrary';
@@ -28,6 +29,7 @@ export default function RoomPage() {
   const [saving, setSaving] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [showSnapshots, setShowSnapshots] = useState(false);
+  const [hoveredBtn, setHoveredBtn] = useState<string | null>(null);
   const [isOwner, setIsOwner] = useState(false);
   const [roomName, setRoomName] = useState('');
   const [isEditingName, setIsEditingName] = useState(false);
@@ -46,7 +48,8 @@ export default function RoomPage() {
         setIsOwner(room.ownerId === user?.id);
         setRoomName(room.name);
       } catch {
-        // Non-critical — share button still shows, just without regenerate
+        // Room metadata is non-critical — ROOM_NOT_FOUND WS event handles redirect
+        // if the room has been deleted
       }
     };
     fetchRoom();
@@ -155,7 +158,7 @@ export default function RoomPage() {
             />
           ) : (
             <div
-              style={styles.roomNameRow}
+              style={{ ...styles.roomNameRow, cursor: isOwner ? 'pointer' : 'default' }}
               onMouseEnter={() => isOwner && setIsHoveringName(true)}
               onMouseLeave={() => setIsHoveringName(false)}
               onClick={() => {
@@ -166,11 +169,11 @@ export default function RoomPage() {
               }}
               title={isOwner ? 'Click to rename' : undefined}
             >
-              <span style={{ ...styles.roomName, cursor: isOwner ? 'pointer' : 'default' }}>
+              <span style={styles.roomName}>
                 {roomName || roomId}
               </span>
               {isOwner && isHoveringName && (
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
                   <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                   <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                 </svg>
@@ -188,37 +191,45 @@ export default function RoomPage() {
               Unsaved
             </span>
           )}
-          <button style={styles.ghostBtn} onClick={() => setShowShare(true)}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
-              <path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98" />
-            </svg>
+          <button
+            style={{
+              ...styles.ghostBtn,
+              ...(hoveredBtn === 'share' ? { backgroundColor: '#F9FAFB' } : {}),
+            }}
+            onClick={() => setShowShare(true)}
+            onMouseEnter={() => setHoveredBtn('share')}
+            onMouseLeave={() => setHoveredBtn(null)}
+          >
+            <Share2 size={14} />
             Share
           </button>
-          <button style={styles.ghostBtn} onClick={() => setShowSnapshots(true)}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10" />
-              <polyline points="12 6 12 12 16 14" />
-            </svg>
+          <button
+            style={{
+              ...styles.ghostBtn,
+              ...(hoveredBtn === 'snapshots' ? { backgroundColor: '#F9FAFB' } : {}),
+            }}
+            onClick={() => setShowSnapshots(true)}
+            onMouseEnter={() => setHoveredBtn('snapshots')}
+            onMouseLeave={() => setHoveredBtn(null)}
+          >
+            <History size={14} />
             Snapshots
           </button>
           <button
-            style={{ ...styles.saveBtn, opacity: saving ? 0.65 : 1 }}
+            style={{
+              ...styles.saveBtn,
+              opacity: saving ? 0.65 : 1,
+              ...(hoveredBtn === 'save' && !saving ? {
+                boxShadow: '0 6px 16px rgba(124, 58, 237, 0.45)',
+                transform: 'translateY(-1px)',
+              } : {}),
+            }}
             onClick={handleSave}
             disabled={saving}
+            onMouseEnter={() => setHoveredBtn('save')}
+            onMouseLeave={() => setHoveredBtn(null)}
           >
-            {saving ? (
-              'Saving...'
-            ) : (
-              <>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-                  <polyline points="17 21 17 13 7 13 7 21" />
-                  <polyline points="7 3 7 8 15 8" />
-                </svg>
-                Save
-              </>
-            )}
+            {saving ? 'Saving...' : <><Save size={13} /> Save</>}
           </button>
         </div>
       </div>
@@ -279,7 +290,7 @@ const styles: Record<string, React.CSSProperties> = {
     width: '28px',
     height: '28px',
     border: '2.5px solid #e5e7eb',
-    borderTop: '2.5px solid #f97316',
+    borderTop: '2.5px solid #7C3AED',
     borderRadius: '50%',
     animation: 'spin 0.8s linear infinite',
   },
@@ -291,7 +302,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '0 0.875rem',
     height: '48px',
     backgroundColor: 'white',
-    borderBottom: '1px solid #e5e7eb',
+    boxShadow: '0 1px 0 #E5E7EB',
     zIndex: 10,
     flexShrink: 0,
   },
@@ -325,8 +336,8 @@ const styles: Record<string, React.CSSProperties> = {
   roomNameInput: {
     fontWeight: 600,
     fontSize: '0.9375rem',
-    border: '1px solid #f97316',
-    outline: '3px solid rgba(249,115,22,0.12)',
+    border: '1px solid #7C3AED',
+    outline: '3px solid rgba(124,58,237,0.12)',
     borderRadius: '5px',
     padding: '2px 6px',
     background: 'white',
@@ -372,26 +383,27 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '0.375rem 0.625rem',
     backgroundColor: 'white',
     color: '#374151',
-    border: '1px solid #e5e7eb',
+    border: '1px solid #E5E7EB',
     borderRadius: '6px',
     cursor: 'pointer',
     fontSize: '0.8125rem',
     fontWeight: 500,
-    transition: 'border-color 0.15s, color 0.15s',
+    transition: 'background-color 0.15s ease',
   },
   saveBtn: {
     display: 'flex',
     alignItems: 'center',
     gap: '0.35rem',
     padding: '0.375rem 0.75rem',
-    backgroundColor: '#f97316',
+    background: 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)',
+    boxShadow: '0 4px 12px rgba(124, 58, 237, 0.35)',
     color: 'white',
     border: 'none',
     borderRadius: '6px',
     cursor: 'pointer',
     fontSize: '0.8125rem',
     fontWeight: 600,
-    transition: 'background-color 0.15s',
+    transition: 'background 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease',
   },
   main: { display: 'flex', flex: 1, overflow: 'hidden' },
   canvasWrapper: { flex: 1, height: '100%', position: 'relative' },

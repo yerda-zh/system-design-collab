@@ -20,6 +20,8 @@ export const WS_EVENTS = {
   SNAPSHOT_DELETED: 'snapshotDeleted',
   COMMENT_CREATED: 'commentCreated',
   COMMENT_DELETED: 'commentDeleted',
+  ROOM_DELETED: 'roomDeleted',
+  ROOM_NOT_FOUND: 'roomNotFound',
 } as const;
 
 class SocketService {

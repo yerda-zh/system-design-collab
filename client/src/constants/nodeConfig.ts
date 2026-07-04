@@ -1,11 +1,13 @@
+import { Database, Zap, MessageSquare, Settings, GitBranch, ArrowLeftRight, Globe } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import type { NodeType } from '../types';
 
-export const NODE_CONFIG: Record<NodeType, { color: string; icon: string }> = {
-  database:     { color: '#2563eb', icon: '🗄️' },
-  cache:        { color: '#16a34a', icon: '⚡' },
-  queue:        { color: '#d97706', icon: '📨' },
-  service:      { color: '#7c3aed', icon: '⚙️' },
-  loadBalancer: { color: '#dc2626', icon: '⚖️' },
-  apiGateway:   { color: '#0891b2', icon: '🔀' },
-  cdn:          { color: '#65a30d', icon: '🌐' },
+export const NODE_CONFIG: Record<NodeType, { color: string; Icon: LucideIcon }> = {
+  database:     { color: '#2563eb', Icon: Database },
+  cache:        { color: '#16a34a', Icon: Zap },
+  queue:        { color: '#d97706', Icon: MessageSquare },
+  service:      { color: '#7c3aed', Icon: Settings },
+  loadBalancer: { color: '#dc2626', Icon: GitBranch },
+  apiGateway:   { color: '#0891b2', Icon: ArrowLeftRight },
+  cdn:          { color: '#65a30d', Icon: Globe },
 };

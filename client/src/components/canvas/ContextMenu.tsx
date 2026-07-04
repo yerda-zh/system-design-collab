@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { MessageCircle, Trash2 } from 'lucide-react';
 
 interface ContextMenuProps {
   x: number;
@@ -57,7 +58,7 @@ export default function ContextMenu({
           (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent';
         }}
       >
-        💬 Add Comment
+        <MessageCircle size={14} /> Add Comment
       </button>
       <button
         style={styles.deleteBtn}
@@ -72,7 +73,7 @@ export default function ContextMenu({
           (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent';
         }}
       >
-        🗑️ Delete
+        <Trash2 size={14} /> Delete
       </button>
     </div>
   );
