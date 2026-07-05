@@ -3,6 +3,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
 import RoomPage from './pages/RoomPage';
+import LandingPage from './pages/LandingPage';
 import { useAuthStore } from './store/authStore';
 import InvitePage from './pages/InvitePage';
 import { ToastContainer } from './components/common/Toast';
@@ -14,17 +15,11 @@ export default function App() {
     <>
     <ToastContainer />
     <Routes>
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
-      <Route
-        path="/dashboard"
-        element={token ? <DashboardPage /> : <Navigate to="/login" />}
-      />
-      <Route
-        path="/room/:roomId"
-        element={token ? <RoomPage /> : <Navigate to="/login" />}
-      />
-      <Route path="*" element={<Navigate to="/dashboard" />} />
+      <Route path="/" element={token ? <Navigate to="/dashboard" /> : <LandingPage />} />
+      <Route path="/login" element={token ? <Navigate to="/dashboard" /> : <LoginPage />} />
+      <Route path="/register" element={token ? <Navigate to="/dashboard" /> : <RegisterPage />} />
+      <Route path="/dashboard" element={token ? <DashboardPage /> : <Navigate to="/" />} />
+      <Route path="/room/:roomId" element={token ? <RoomPage /> : <Navigate to="/" />} />
       <Route path="/invite/:token" element={<InvitePage />} />
     </Routes>
     </>
