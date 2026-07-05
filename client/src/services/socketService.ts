@@ -48,7 +48,8 @@ class SocketService {
 
     const token = useAuthStore.getState().token;
 
-    this.socket = io('http://localhost:3001', {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+    this.socket = io(apiUrl, {
       auth: { token },
       reconnection: true,
       reconnectionAttempts: 5,

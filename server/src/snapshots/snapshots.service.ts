@@ -51,6 +51,7 @@ export class SnapshotsService {
     return this.snapshotsRepository.find({
       where: { roomId },
       order: { createdAt: 'DESC' },
+      take: 100,
     });
   }
 

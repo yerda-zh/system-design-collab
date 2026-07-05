@@ -29,13 +29,20 @@ interface SocketData {
 // Map<socketId, { userId, displayName, roomId }>
 const socketMeta = new Map<string, { userId: string; displayName: string; roomId: string }>();
 
+// Track last cursor event time per socket to throttle at ~60fps max
+const cursorLastSeen = new Map<string, number>();
+
 // Debounce timers per room — warning analysis runs 500ms after
 // the last operation in a room, not after every single operation
 const warningDebounceTimers = new Map<string, NodeJS.Timeout>();
 
+const wsAllowedOrigins = (
+  process.env.CORS_ORIGIN ?? 'http://localhost:5173,http://127.0.0.1:5173'
+).split(',');
+
 @WebSocketGateway({
   cors: {
-    origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
+    origin: wsAllowedOrigins,
     credentials: true,
   },
 })
@@ -99,6 +106,7 @@ export class CanvasGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     await this.redisService.removeActiveUser(roomId, userId);
     socketMeta.delete(socket.id);
+    cursorLastSeen.delete(socket.id);
 
     // Check if this was the last user in the room
     const remaining = await this.redisService.getActiveUsers(roomId);
@@ -277,6 +285,12 @@ export class CanvasGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ): void {
     const meta = socketMeta.get(socket.id);
     if (!meta) return;
+
+    // Throttle cursor broadcasts to max ~60fps (16ms minimum interval)
+    const now = Date.now();
+    const last = cursorLastSeen.get(socket.id) ?? 0;
+    if (now - last < 16) return;
+    cursorLastSeen.set(socket.id, now);
 
     socket.to(meta.roomId).emit(WS_EVENTS.CURSOR_BROADCAST, {
       userId: meta.userId,
