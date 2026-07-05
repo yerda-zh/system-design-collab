@@ -6,8 +6,10 @@ import {
   Body,
   UseGuards,
   Request,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { ThrottlerGuard } from '@nestjs/throttler';
 import { CanvasStateService } from './canvas-state.service';
 import { SaveCanvasDto } from './dto/save-canvas.dto';
 
@@ -16,14 +18,14 @@ interface AuthenticatedRequest {
 }
 
 @Controller('canvas')
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), ThrottlerGuard)
 export class CanvasStateController {
   constructor(private readonly canvasStateService: CanvasStateService) {}
 
   // GET /canvas/:roomId — load canvas state
   @Get(':roomId')
   getCanvasState(
-    @Param('roomId') roomId: string,
+    @Param('roomId', ParseUUIDPipe) roomId: string,
     @Request() req: AuthenticatedRequest,
   ) {
     return this.canvasStateService.getCanvasState(roomId, req.user.id);
@@ -32,7 +34,7 @@ export class CanvasStateController {
   // PUT /canvas/:roomId — save canvas state
   @Put(':roomId')
   saveCanvasState(
-    @Param('roomId') roomId: string,
+    @Param('roomId', ParseUUIDPipe) roomId: string,
     @Body() dto: SaveCanvasDto,
     @Request() req: AuthenticatedRequest,
   ) {

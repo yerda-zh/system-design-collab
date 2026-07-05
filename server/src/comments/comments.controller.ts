@@ -7,8 +7,10 @@ import {
   Body,
   UseGuards,
   Request,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { ThrottlerGuard } from '@nestjs/throttler';
 import { CommentsService } from './comments.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { CanvasGateway } from '../canvas/canvas.gateway';
@@ -19,7 +21,7 @@ interface AuthenticatedRequest {
 }
 
 @Controller('comments')
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), ThrottlerGuard)
 export class CommentsController {
   constructor(
     private readonly commentsService: CommentsService,
@@ -29,7 +31,7 @@ export class CommentsController {
 
   @Post(':roomId')
   async createComment(
-    @Param('roomId') roomId: string,
+    @Param('roomId', ParseUUIDPipe) roomId: string,
     @Body() dto: CreateCommentDto,
     @Request() req: AuthenticatedRequest,
   ) {
@@ -46,7 +48,7 @@ export class CommentsController {
 
   @Get(':roomId')
   getComments(
-    @Param('roomId') roomId: string,
+    @Param('roomId', ParseUUIDPipe) roomId: string,
     @Request() req: AuthenticatedRequest,
   ) {
     return this.commentsService.getComments(roomId, req.user.id);
@@ -54,7 +56,7 @@ export class CommentsController {
 
   @Delete(':commentId')
   async deleteComment(
-    @Param('commentId') commentId: string,
+    @Param('commentId', ParseUUIDPipe) commentId: string,
     @Request() req: AuthenticatedRequest,
   ) {
     const { roomId } = await this.commentsService.deleteComment(

@@ -8,8 +8,10 @@ import {
   Param,
   UseGuards,
   Request,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { ThrottlerGuard } from '@nestjs/throttler';
 import { RoomsService } from './rooms.service';
 import { CanvasGateway } from '../canvas/canvas.gateway';
 import { CreateRoomDto } from './dto/create-room.dto';
@@ -25,7 +27,7 @@ interface AuthenticatedRequest {
 // EVERY route in here requires a valid JWT — unauthenticated
 // requests are automatically rejected with 401 Unauthorized
 @Controller('rooms')
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), ThrottlerGuard)
 export class RoomsController {
     constructor(
         private readonly roomsService: RoomsService,
@@ -53,38 +55,38 @@ export class RoomsController {
 
     // GET /rooms/:id — get one room (with access check)
     @Get(':id')
-    getRoom(@Param('id') id: string, @Request() req: AuthenticatedRequest ) {
+    getRoom(@Param('id', ParseUUIDPipe) id: string, @Request() req: AuthenticatedRequest) {
         return this.roomsService.getRoom(id, req.user.id);
     }
 
-    // POST /rooms/join/:inviteToken — join via invite link
+    // POST /rooms/join/:inviteToken — join via invite link (token is UUID)
     @Post('join/:inviteToken')
-    joinRoom(@Param('inviteToken') inviteToken: string, @Request() req: AuthenticatedRequest ) {
+    joinRoom(@Param('inviteToken', ParseUUIDPipe) inviteToken: string, @Request() req: AuthenticatedRequest) {
         return this.roomsService.joinRoom(inviteToken, req.user.id);
     }
 
     // PATCH /rooms/:id/regenerate-invite — invalidate old share link
     @Patch(':id/regenerate-invite')
-    regenerateInvite(@Param('id') id: string, @Request() req: AuthenticatedRequest ) {
+    regenerateInvite(@Param('id', ParseUUIDPipe) id: string, @Request() req: AuthenticatedRequest) {
         return this.roomsService.regenerateInviteToken(id, req.user.id);
     }
 
     // GET /rooms/:id/invite — get invite token (owner only)
     @Get(':id/invite')
-    getInviteToken(@Param('id') id: string, @Request() req: AuthenticatedRequest) {
+    getInviteToken(@Param('id', ParseUUIDPipe) id: string, @Request() req: AuthenticatedRequest) {
         return this.roomsService.getInviteToken(id, req.user.id);
     }
 
     // GET /rooms/:id/invite-public — get invite token (any room member)
     @Get(':id/invite-public')
-    getInviteTokenPublic(@Param('id') id: string, @Request() req: AuthenticatedRequest) {
+    getInviteTokenPublic(@Param('id', ParseUUIDPipe) id: string, @Request() req: AuthenticatedRequest) {
         return this.roomsService.getInviteTokenPublic(id, req.user.id);
     }
 
     // PATCH /rooms/:id/name — rename room (owner only)
     @Patch(':id/name')
     updateRoomName(
-        @Param('id') id: string,
+        @Param('id', ParseUUIDPipe) id: string,
         @Body() dto: UpdateRoomNameDto,
         @Request() req: AuthenticatedRequest,
     ) {
@@ -93,9 +95,7 @@ export class RoomsController {
 
     // DELETE /rooms/:id — permanently delete room (owner only)
     @Delete(':id')
-    async deleteRoom(@Param('id') id: string, @Request() req: AuthenticatedRequest) {
-        // Broadcast before deleting so connected users are still in the Socket.IO room
-        // and receive the event before the room disappears from the DB
+    async deleteRoom(@Param('id', ParseUUIDPipe) id: string, @Request() req: AuthenticatedRequest) {
         await this.roomsService.verifyOwner(id, req.user.id);
         this.canvasGateway.broadcastRoomDeleted(id);
         await this.roomsService.deleteRoom(id, req.user.id);

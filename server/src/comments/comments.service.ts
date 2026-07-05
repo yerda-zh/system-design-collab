@@ -45,6 +45,7 @@ export class CommentsService {
     return this.commentsRepository.find({
       where: { roomId },
       order: { createdAt: 'ASC' },
+      take: 500,
     });
   }
 
