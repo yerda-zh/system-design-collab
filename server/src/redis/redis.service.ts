@@ -21,7 +21,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     this.client = new Redis({
       host: this.configService.get<string>('REDIS_HOST'),
       port: this.configService.get<number>('REDIS_PORT'),
-      // Retry connection up to 3 times before giving up
+      password: this.configService.get<string>('REDIS_PASSWORD'),
       maxRetriesPerRequest: 3,
     });
 
