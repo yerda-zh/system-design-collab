@@ -1,5 +1,6 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { MessageCircle, Trash2 } from 'lucide-react';
+import { useClampToViewport } from '../../hooks/useClampToViewport';
 
 interface ContextMenuProps {
   x: number;
@@ -16,22 +17,22 @@ export default function ContextMenu({
   onClose,
   onAddComment,
 }: ContextMenuProps) {
-  const menuRef = useRef<HTMLDivElement>(null);
+  const { ref, style: clampStyle } = useClampToViewport<HTMLDivElement>();
 
   // Close the menu when clicking anywhere outside it
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
         onClose();
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [onClose]);
+  }, [onClose, ref]);
 
   return (
     <div
-      ref={menuRef}
+      ref={ref}
       style={{
         position: 'fixed',
         top: y,
@@ -43,6 +44,7 @@ export default function ContextMenu({
         zIndex: 1000,
         minWidth: '140px',
         overflow: 'hidden',
+        ...clampStyle,
       }}
     >
       <button

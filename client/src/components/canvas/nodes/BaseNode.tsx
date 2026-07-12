@@ -7,6 +7,8 @@ import { useWarningStore } from '../../../store/warningStore';
 import { useCommentStore } from '../../../store/commentStore';
 import { useCanvasStore } from '../../../store/canvasStore';
 import { NODE_CONFIG } from '../../../constants/nodeConfig';
+import { WARNING_TITLES } from '../../../constants/warningTitles';
+import { useClampToViewport } from '../../../hooks/useClampToViewport';
 
 const NODE_TYPE_LABELS: Record<string, string> = {
   database:     'Database',
@@ -16,6 +18,33 @@ const NODE_TYPE_LABELS: Record<string, string> = {
   loadBalancer: 'Load Balancer',
   apiGateway:   'API Gateway',
   cdn:          'CDN',
+
+  client:       'Client',
+  mobileClient: 'Mobile Client',
+  thirdParty:   'Third Party',
+
+  dns:          'DNS',
+  firewall:     'Firewall / WAF',
+  reverseProxy: 'Reverse Proxy',
+
+  objectStorage: 'Object Storage',
+  blockStorage:  'Block Storage',
+  dataWarehouse: 'Data Warehouse',
+  searchEngine:  'Search Engine',
+  timeSeriesDb:  'Time Series DB',
+
+  worker:                'Worker',
+  serverless:            'Serverless',
+  containerOrchestrator: 'Container Orchestrator',
+
+  eventBus:        'Event Bus',
+  streamProcessor: 'Stream Processor',
+
+  monitoring: 'Monitoring',
+  logging:    'Logging',
+
+  identityProvider: 'Identity Provider',
+  secretManager:    'Secret Manager',
 };
 
 interface BaseNodeProps {
@@ -49,8 +78,37 @@ function BaseNode({ id, data, selected }: BaseNodeProps) {
   const [isCommentTooltipVisible, setIsCommentTooltipVisible] = useState(false);
 
   const nodeRef = useRef<HTMLDivElement>(null);
+  const warningBadgeRef = useRef<HTMLDivElement>(null);
+  const commentBadgeRef = useRef<HTMLDivElement>(null);
   const [tooltipAnchor, setTooltipAnchor] = useState<DOMRect | null>(null);
   const [commentTooltipAnchor, setCommentTooltipAnchor] = useState<DOMRect | null>(null);
+
+  const {
+    ref: warningTooltipRef,
+    style: warningTooltipStyle,
+    arrowOffsetX: warningArrowOffsetX,
+    arrowSide: warningArrowSide,
+  } = useClampToViewport<HTMLDivElement>(
+    [isTooltipVisible, tooltipAnchor],
+    {
+      arrowAnchor: tooltipAnchor
+        ? { x: tooltipAnchor.left + tooltipAnchor.width / 2, y: tooltipAnchor.top + tooltipAnchor.height / 2 }
+        : undefined,
+    },
+  );
+  const {
+    ref: commentTooltipRef,
+    style: commentTooltipStyle,
+    arrowOffsetX: commentArrowOffsetX,
+    arrowSide: commentArrowSide,
+  } = useClampToViewport<HTMLDivElement>(
+    [isCommentTooltipVisible, commentTooltipAnchor],
+    {
+      arrowAnchor: commentTooltipAnchor
+        ? { x: commentTooltipAnchor.left + commentTooltipAnchor.width / 2, y: commentTooltipAnchor.top + commentTooltipAnchor.height / 2 }
+        : undefined,
+    },
+  );
 
   const commitEdit = () => {
     const trimmed = labelInput.trim();
@@ -132,13 +190,14 @@ function BaseNode({ id, data, selected }: BaseNodeProps) {
 
       {hasWarnings && (
         <div
+          ref={warningBadgeRef}
           style={{
             ...styles.badge,
             backgroundColor: hasHighSeverity ? '#dc2626' : '#d97706',
           }}
           onMouseEnter={() => {
             setIsTooltipVisible(true);
-            if (nodeRef.current) setTooltipAnchor(nodeRef.current.getBoundingClientRect());
+            if (warningBadgeRef.current) setTooltipAnchor(warningBadgeRef.current.getBoundingClientRect());
           }}
           onMouseLeave={() => {
             setIsTooltipVisible(false);
@@ -150,28 +209,36 @@ function BaseNode({ id, data, selected }: BaseNodeProps) {
       )}
 
       {isTooltipVisible && hasWarnings && tooltipAnchor && createPortal(
-        <div style={{
+        <div ref={warningTooltipRef} style={{
           ...styles.tooltip,
           bottom: window.innerHeight - tooltipAnchor.top + 6,
           right: window.innerWidth - tooltipAnchor.right,
+          ...warningTooltipStyle,
         }}>
           {warnings.map((w) => (
             <div key={w.id} style={styles.tooltipRow}>
               <span style={{ color: w.severity === 'high' ? '#dc2626' : '#d97706' }}>●</span>
-              <span>{w.message}</span>
+              <span>{WARNING_TITLES[w.type] ?? w.type}</span>
             </div>
           ))}
-          <div style={styles.tooltipArrow} />
+          <div style={{
+            ...styles.tooltipArrow,
+            left: warningArrowOffsetX ?? 202,
+            ...(warningArrowSide === 'top'
+              ? { top: '-4px', borderBottom: '4px solid #111827' }
+              : { bottom: '-4px', borderTop: '4px solid #111827' }),
+          }} />
         </div>,
         document.body
       )}
 
       {topLevelComments.length > 0 && (
         <div
+          ref={commentBadgeRef}
           style={styles.commentBadge}
           onMouseEnter={() => {
             setIsCommentTooltipVisible(true);
-            if (nodeRef.current) setCommentTooltipAnchor(nodeRef.current.getBoundingClientRect());
+            if (commentBadgeRef.current) setCommentTooltipAnchor(commentBadgeRef.current.getBoundingClientRect());
           }}
           onMouseLeave={() => {
             setIsCommentTooltipVisible(false);
@@ -183,10 +250,11 @@ function BaseNode({ id, data, selected }: BaseNodeProps) {
       )}
 
       {isCommentTooltipVisible && topLevelComments.length > 0 && commentTooltipAnchor && createPortal(
-        <div style={{
+        <div ref={commentTooltipRef} style={{
           ...styles.commentTooltip,
           bottom: window.innerHeight - commentTooltipAnchor.top + 6,
           left: commentTooltipAnchor.left,
+          ...commentTooltipStyle,
         }}>
           {topLevelComments.map((c) => (
             <div key={c.id} style={styles.tooltipRow}>
@@ -194,7 +262,13 @@ function BaseNode({ id, data, selected }: BaseNodeProps) {
               <span><strong>{c.authorName}:</strong> {c.body}</span>
             </div>
           ))}
-          <div style={styles.commentTooltipArrow} />
+          <div style={{
+            ...styles.commentTooltipArrow,
+            left: commentArrowOffsetX ?? 10,
+            ...(commentArrowSide === 'top'
+              ? { top: '-4px', borderBottom: '4px solid #111827' }
+              : { bottom: '-4px', borderTop: '4px solid #111827' }),
+          }} />
         </div>,
         document.body
       )}
@@ -293,13 +367,10 @@ const styles: Record<string, React.CSSProperties> = {
   },
   tooltipArrow: {
     position: 'absolute',
-    bottom: '-4px',
-    right: '10px',
     width: 0,
     height: 0,
     borderLeft: '4px solid transparent',
     borderRight: '4px solid transparent',
-    borderTop: '4px solid #111827',
   },
   commentBadge: {
     position: 'absolute',
@@ -332,13 +403,10 @@ const styles: Record<string, React.CSSProperties> = {
   },
   commentTooltipArrow: {
     position: 'absolute',
-    bottom: '-4px',
-    left: '10px',
     width: 0,
     height: 0,
     borderLeft: '4px solid transparent',
     borderRight: '4px solid transparent',
-    borderTop: '4px solid #111827',
   },
 };
 

@@ -12,4 +12,31 @@ export const nodeTypes: NodeTypes = {
   loadBalancer: BaseNode,
   apiGateway: BaseNode,
   cdn: BaseNode,
+
+  client: BaseNode,
+  mobileClient: BaseNode,
+  thirdParty: BaseNode,
+
+  dns: BaseNode,
+  firewall: BaseNode,
+  reverseProxy: BaseNode,
+
+  objectStorage: BaseNode,
+  blockStorage: BaseNode,
+  dataWarehouse: BaseNode,
+  searchEngine: BaseNode,
+  timeSeriesDb: BaseNode,
+
+  worker: BaseNode,
+  serverless: BaseNode,
+  containerOrchestrator: BaseNode,
+
+  eventBus: BaseNode,
+  streamProcessor: BaseNode,
+
+  monitoring: BaseNode,
+  logging: BaseNode,
+
+  identityProvider: BaseNode,
+  secretManager: BaseNode,
 };

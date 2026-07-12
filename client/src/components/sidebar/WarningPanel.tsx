@@ -1,19 +1,11 @@
-import { useState } from 'react';
-import { ChevronDown, ChevronRight, CheckCircle2 } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
 import { useWarningStore } from '../../store/warningStore';
 import type { Warning, WarningSeverity } from '../../types/warnings';
+import { WARNING_TITLES } from '../../constants/warningTitles';
 
 const SEVERITY_CONFIG: Record<WarningSeverity, { color: string; label: string }> = {
   high:   { color: '#dc2626', label: 'High' },
   medium: { color: '#d97706', label: 'Medium' },
-};
-
-const WARNING_TITLES: Record<string, string> = {
-  SPOF:                      'Single Point of Failure',
-  MISSING_CACHE:             'Missing Cache Layer',
-  CASCADING_FAILURE:         'Cascading Failure Risk',
-  NO_LOAD_BALANCER:          'No Load Balancer',
-  DIRECT_CLIENT_TO_DATABASE: 'Direct Client → Database',
 };
 
 interface WarningPanelProps {
@@ -22,56 +14,47 @@ interface WarningPanelProps {
 
 export default function WarningPanel({ onSelectNode }: WarningPanelProps) {
   const warnings = useWarningStore((state) => state.warnings);
-  const [isExpanded, setIsExpanded] = useState(true);
 
   const highCount = warnings.filter((w) => w.severity === 'high').length;
   const mediumCount = warnings.filter((w) => w.severity === 'medium').length;
 
   return (
     <div style={styles.container}>
-      <button
-        style={styles.header}
-        onClick={() => setIsExpanded((prev) => !prev)}
-      >
-        <div style={styles.headerLeft}>
-          <span style={styles.headerTitle}>Warnings</span>
-          {warnings.length > 0 && (
-            <div style={styles.counts}>
-              {highCount > 0 && (
-                <span style={{ ...styles.countBadge, backgroundColor: '#dc2626' }}>
-                  {highCount}
-                </span>
-              )}
-              {mediumCount > 0 && (
-                <span style={{ ...styles.countBadge, backgroundColor: '#d97706' }}>
-                  {mediumCount}
-                </span>
-              )}
-            </div>
-          )}
-        </div>
-        {isExpanded ? <ChevronDown size={14} color="#475569" /> : <ChevronRight size={14} color="#475569" />}
-      </button>
+      <div style={styles.header}>
+        <span style={styles.headerTitle}>Warnings</span>
+        {warnings.length > 0 && (
+          <div style={styles.counts}>
+            {highCount > 0 && (
+              <span style={{ ...styles.countBadge, backgroundColor: '#dc2626' }}>
+                {highCount}
+              </span>
+            )}
+            {mediumCount > 0 && (
+              <span style={{ ...styles.countBadge, backgroundColor: '#d97706' }}>
+                {mediumCount}
+              </span>
+            )}
+          </div>
+        )}
+      </div>
 
-      {isExpanded && (
-        <div style={styles.list}>
-          {warnings.length === 0 ? (
-            <div style={styles.emptyState}>
-              <CheckCircle2 size={20} color="#16a34a" />
-              <p style={styles.emptyTitle}>Architecture looks good</p>
-              <p style={styles.emptySubtitle}>No issues detected</p>
-            </div>
-          ) : (
-            warnings.map((warning) => (
-              <WarningItem
-                key={warning.id}
-                warning={warning}
-                onClick={() => onSelectNode(warning.nodeId)}
-              />
-            ))
-          )}
-        </div>
-      )}
+      <div className="sidebar-scroll" style={styles.list}>
+        {warnings.length === 0 ? (
+          <div style={styles.emptyState}>
+            <CheckCircle2 size={20} color="#16a34a" />
+            <p style={styles.emptyTitle}>Architecture looks good</p>
+            <p style={styles.emptySubtitle}>No issues detected</p>
+          </div>
+        ) : (
+          warnings.map((warning) => (
+            <WarningItem
+              key={warning.id}
+              warning={warning}
+              onClick={() => onSelectNode(warning.nodeId)}
+            />
+          ))
+        )}
+      </div>
     </div>
   );
 }
@@ -102,25 +85,18 @@ function WarningItem({ warning, onClick }: WarningItemProps) {
 
 const styles: Record<string, React.CSSProperties> = {
   container: {
-    borderTop: '1px solid #1E293B',
+    height: '100%',
+    display: 'flex',
+    flexDirection: 'column',
     backgroundColor: '#0F172A',
-    flexShrink: 0,
   },
   header: {
-    width: '100%',
+    padding: '0.75rem 1rem',
+    borderBottom: '1px solid #1E293B',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: '0.5rem 0.875rem',
-    background: 'none',
-    border: 'none',
-    cursor: 'pointer',
-    borderBottom: '1px solid transparent',
-  },
-  headerLeft: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.5rem',
+    backgroundColor: '#0F172A',
   },
   headerTitle: {
     fontSize: '0.65rem',
@@ -142,9 +118,8 @@ const styles: Record<string, React.CSSProperties> = {
     lineHeight: '16px',
   },
   list: {
-    maxHeight: '220px',
+    flex: 1,
     overflowY: 'auto',
-    borderTop: '1px solid #1E293B',
   },
   emptyState: {
     display: 'flex',

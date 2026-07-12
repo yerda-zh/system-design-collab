@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { EdgeType } from '../../types';
 import { EDGE_CONFIG } from '../../types';
+import { useClampToViewport } from '../../hooks/useClampToViewport';
 
 interface EdgeTypePopupProps {
   x: number;
@@ -9,15 +10,27 @@ interface EdgeTypePopupProps {
   onClose: () => void;
 }
 
-const EDGE_TYPES: EdgeType[] = ['http', 'grpc', 'async', 'pubsub'];
+const EDGE_TYPES: EdgeType[] = [
+  'http',
+  'grpc',
+  'async',
+  'pubsub',
+  'websocket',
+  'tcp',
+  'dbProtocol',
+  'eventStream',
+  'internal',
+  'webhook',
+];
 
 export default function EdgeTypePopup({ x, y, onSelect, onClose }: EdgeTypePopupProps) {
   const [hovered, setHovered] = useState<EdgeType | null>(null);
+  const { ref, style: clampStyle } = useClampToViewport<HTMLDivElement>();
 
   return (
     <>
       <div style={styles.backdrop} onClick={onClose} />
-      <div style={{ ...styles.popup, top: y, left: x }}>
+      <div ref={ref} style={{ ...styles.popup, top: y, left: x, ...clampStyle }}>
         <p style={styles.title}>Connection type</p>
         {EDGE_TYPES.map((edgeType) => {
           const config = EDGE_CONFIG[edgeType];
@@ -58,6 +71,8 @@ const styles: Record<string, React.CSSProperties> = {
     boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
     padding: '0.5rem',
     minWidth: '160px',
+    maxHeight: '70vh',
+    overflowY: 'auto',
   },
   title: {
     margin: '0 0 0.4rem 0.4rem',

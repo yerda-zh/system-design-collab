@@ -5,7 +5,34 @@ export type NodeType =
   | 'service'
   | 'loadBalancer'
   | 'apiGateway'
-  | 'cdn';
+  | 'cdn'
+  // Users & Clients
+  | 'client'
+  | 'mobileClient'
+  | 'thirdParty'
+  // Networking
+  | 'dns'
+  | 'firewall'
+  | 'reverseProxy'
+  // Storage
+  | 'objectStorage'
+  | 'blockStorage'
+  | 'dataWarehouse'
+  | 'searchEngine'
+  | 'timeSeriesDb'
+  // Compute
+  | 'worker'
+  | 'serverless'
+  | 'containerOrchestrator'
+  // Messaging
+  | 'eventBus'
+  | 'streamProcessor'
+  // Observability
+  | 'monitoring'
+  | 'logging'
+  // Identity & Security
+  | 'identityProvider'
+  | 'secretManager';
 
 export interface NodeData {
   label: string;

@@ -328,6 +328,7 @@ function CanvasInner({ onEmitOperation, onCursorMove, onOpenComments }: CanvasIn
 
       {contextMenu && (
         <ContextMenu
+          key={`${contextMenu.targetType}-${contextMenu.targetId}`}
           x={contextMenu.x}
           y={contextMenu.y}
           onDelete={handleContextMenuDelete}
@@ -341,6 +342,7 @@ function CanvasInner({ onEmitOperation, onCursorMove, onOpenComments }: CanvasIn
 
       {pendingConnection && (
         <EdgeTypePopup
+          key={pendingConnection.edgeId}
           x={pendingConnection.x}
           y={pendingConnection.y}
           onSelect={handleEdgeTypeSelect}

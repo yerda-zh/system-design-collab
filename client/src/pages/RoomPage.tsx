@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { Share2, History, Save } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Canvas from '../components/canvas/Canvas';
-import ComponentLibrary from '../components/sidebar/ComponentLibrary';
+import SidebarLayout from '../components/sidebar/SidebarLayout';
 import ActiveUsers from '../components/collaboration/ActiveUsers';
 import SharePopup from '../components/room/SharePopup';
 import SnapshotsPanel from '../components/room/SnapshotsPanel';
@@ -245,7 +245,7 @@ export default function RoomPage() {
       )}
 
       <div style={styles.main}>
-        <ComponentLibrary onAddNode={handleAddNode} onSelectNode={handleSelectNode} />
+        <SidebarLayout onAddNode={handleAddNode} onSelectNode={handleSelectNode} />
         <div style={styles.canvasWrapper}>
           <Canvas
             onEmitOperation={handleEmitOperation}

@@ -6,6 +6,7 @@ import { useShallow } from 'zustand/react/shallow';
 import type { EdgeType } from '../../../types';
 import { EDGE_CONFIG } from '../../../types';
 import { useCommentStore } from '../../../store/commentStore';
+import { useClampToViewport } from '../../../hooks/useClampToViewport';
 
 type Props = EdgeProps & { data?: { edgeType?: EdgeType } };
 
@@ -32,6 +33,19 @@ export default function CustomEdge({
   const [isCommentTooltipVisible, setIsCommentTooltipVisible] = useState(false);
   const [commentTooltipAnchor, setCommentTooltipAnchor] = useState<DOMRect | null>(null);
   const badgeRef = useRef<HTMLDivElement>(null);
+  const {
+    ref: commentTooltipRef,
+    style: commentTooltipStyle,
+    arrowOffsetX: commentArrowOffsetX,
+    arrowSide: commentArrowSide,
+  } = useClampToViewport<HTMLDivElement>(
+    [isCommentTooltipVisible, commentTooltipAnchor],
+    {
+      arrowAnchor: commentTooltipAnchor
+        ? { x: commentTooltipAnchor.left + commentTooltipAnchor.width / 2, y: commentTooltipAnchor.top + commentTooltipAnchor.height / 2 }
+        : undefined,
+    },
+  );
 
   const ARROW_OFFSET = 5;
   const targetOffset = ({
@@ -116,10 +130,11 @@ export default function CustomEdge({
       </EdgeLabelRenderer>
 
       {isCommentTooltipVisible && topLevelComments.length > 0 && commentTooltipAnchor && createPortal(
-        <div style={{
+        <div ref={commentTooltipRef} style={{
           ...styles.commentTooltip,
           bottom: window.innerHeight - commentTooltipAnchor.top + 6,
           left: commentTooltipAnchor.left,
+          ...commentTooltipStyle,
         }}>
           {topLevelComments.map((c) => (
             <div key={c.id} style={styles.tooltipRow}>
@@ -127,7 +142,13 @@ export default function CustomEdge({
               <span><strong>{c.authorName}:</strong> {c.body}</span>
             </div>
           ))}
-          <div style={styles.commentTooltipArrow} />
+          <div style={{
+            ...styles.commentTooltipArrow,
+            left: commentArrowOffsetX ?? 10,
+            ...(commentArrowSide === 'top'
+              ? { top: '-4px', borderBottom: '4px solid #111827' }
+              : { bottom: '-4px', borderTop: '4px solid #111827' }),
+          }} />
         </div>,
         document.body,
       )}
@@ -184,12 +205,9 @@ const styles: Record<string, React.CSSProperties> = {
   },
   commentTooltipArrow: {
     position: 'absolute',
-    bottom: '-4px',
-    left: '10px',
     width: 0,
     height: 0,
     borderLeft: '4px solid transparent',
     borderRight: '4px solid transparent',
-    borderTop: '4px solid #111827',
   },
 };
