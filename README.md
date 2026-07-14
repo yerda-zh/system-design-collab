@@ -169,6 +169,3 @@ DNS, CDN, Load Balancer, API Gateway, Firewall, and Reverse Proxy nodes are excl
 
 An unconnected node sitting on the canvas does not satisfy rules that require its presence. A CDN node with no edges does not clear the "No CDN for Clients" warning. A replica database with no edges does not clear the SPOF warning. This ensures warnings reflect actual architecture, not canvas decoration.
 
-## License
-
-MIT
